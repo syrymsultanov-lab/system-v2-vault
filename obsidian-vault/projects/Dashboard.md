@@ -1,26 +1,36 @@
 ---
 project: system-v2
 component: dashboard
-status: in-progress
+status: live
 tabs: 9
-tabs-done: 8
-updated: 2026-04-18
+tabs-done: 9
+tabs-live: 9
+updated: 2026-04-20
 ---
 
 # Dashboard (9 вкладок)
 
-## Статус: В процессе (8/9 вкладок)
+## Статус: Live на Supabase (9/9 вкладок, E2E 2026-04-20)
 
-## 9 вкладок
-1. ✅ **Дашборд** — обзор, стат-карточки, активность команды, лидерборд
-2. ✅ **Лиды** — 8 mock-лидов, статусы, фильтры/поиск, модалка с действиями (AI-черновик, переписка — toast-заглушки)
-3. ✅ **Контакты** — 8 mock-контактов, теги, приглашения через clipboard-ссылку, нативный переход в мессенджер
-4. ✅ **Задачи** — 11 mock-задач, источники AI/Я/Система, snooze, фильтры по сроку и источнику. Фикс TODAY-курсор для предсказуемых сроков
-5. ✅ **Моя структура** — MLM-дерево 16 партнёров на 3 уровнях, прогресс ранга SMD→RD, реф-блок, цветовая кодировка 8 рангов, Топ-5 + сводка по линиям
-6. ✅ **История** — read-only журнал `events_log`, 22 mock-события за 2 недели, группировка по дням, 3 ряда фильтров (период/категория/актёр)
-7. ✅ **Обучение** — 10 модулей в card grid, общий прогресс %, чек уроков (видео/статья/чек-лист/тест/практика). Бейджи Обязательно / Сертификат / Уровень
-8. ✅ **Шаблоны** — 13 шаблонов с переменными `{{name}}`, двухрежимная модалка (исходник ↔ preview), фильтры по категории/каналу/статусу, дублирование, активация
-9. ⏳ **Настройки** — роли, AI, интеграции
+Все вкладки переведены с mock-данных на реальный Supabase через raw-fetch паттерн (`assets/js/api.js`). RLS own-only. Без SDK, токен в sessionStorage.
+
+## 9 вкладок (все на live)
+1. ✅ **Дашборд** — `leads/contacts/tasks/events_log` (счётчики + сегодня), chart за 7 дней, лидерборд `partners` по `group_volume` с пометкой «ВЫ», компас PV/GV/ранг
+2. ✅ **Лиды** — `SELECT leads WHERE partner_id` через RLS, PATCH status с optimistic rollback, фильтры/поиск, XSS-защита через `esc()`
+3. ✅ **Контакты** — `SELECT contacts`, приглашение через `PATCH invited_at=now()`, DELETE, ref_code из `currentPartner`
+4. ✅ **Задачи** — `SELECT tasks` с embedded `lead`/`contact`, CRUD (markDone/reopen/snooze/delete) через PATCH/DELETE
+5. ✅ **Моя структура** — `SELECT partners`, BFS-дерево от `me.id`, team_size рекурсивно, ref_code в карточке
+6. ✅ **История** — `events_log?actor_id=eq.me&order=created_at.desc&limit=500`, actors me/ai/system/partner/lead/anon
+7. ✅ **Обучение** — `training_modules?select=*,lessons:training_lessons(*)` + `training_progress`, toggle урока через POST/DELETE
+8. ✅ **Шаблоны** — `SELECT templates` (own + системные через RLS), POST duplicate, PATCH activate, DELETE own
+9. ✅ **Настройки** — load `partners+partner_settings+partner_integrations+upline`, profile PATCH, AI/notify autosave, messengers upsert, `/auth/v1/user` для смены пароля
+
+## Общий паттерн
+
+- Общий REST-клиент `assets/js/api.js`: `sb(method, path, body)` + `sbAuth()` для `/auth/v1`
+- `getCurrentPartner()` с кешем в sessionStorage
+- Все мутации с optimistic rollback при 4xx/5xx
+- `requireAuth()` редиректит на `../login.html` если токена нет
 
 ## Единый UX-паттерн (применён во всех заполненных вкладках)
 1. `.welcome` — заголовок + краткое описание + правый бейдж счётчика
