@@ -185,11 +185,15 @@
   </div>
 </div>
 
+<script src="assets/js/api.js"></script>
 <script src="assets/js/dashboard.js"></script>
 <script>
 initDashboard('structure');
+requireAuth();
 
-const MY_REF = 'TEST001';
+let MY_REF = '';
+let me = null;
+let PARTNERS = [];
 
 const RANK_MAP = {
   ED:  { label:'Executive Director',         short:'ED',  cls:'r-ed'  },
@@ -207,57 +211,58 @@ const STATUS_MAP = {
   new:      { label:'Новый',       icon:'🆕' },
 };
 
-// ===== MOCK PARTNERS (level 1 = прямые от Сайры; level 2 = от L1; ...) =====
-const PARTNERS = [
-  // Линия 1 — прямые
-  { id:1,  name:'Айдар',    last_name:'Касенов',    ref:'AID2025', level:1, upline:0, rank:'RD',  status:'active',   country:'KZ', city:'Алматы',  joined:'2025-08-12', personal_cv:280, team_cv:480, team_size:42, last_active:'2026-04-18' },
-  { id:2,  name:'Жанна',    last_name:'Бекмуратова', ref:'JBM77',   level:1, upline:0, rank:'SMD', status:'active',   country:'KZ', city:'Астана',  joined:'2025-09-04', personal_cv:210, team_cv:340, team_size:28, last_active:'2026-04-17' },
-  { id:3,  name:'Олег',     last_name:'Морозов',     ref:'OM-RU',   level:1, upline:0, rank:'MD',  status:'active',   country:'RU', city:'Москва',  joined:'2025-11-22', personal_cv:160, team_cv:220, team_size:14, last_active:'2026-04-16' },
-  { id:4,  name:'Мадина',   last_name:'Нурлыбекова', ref:'MN-001',  level:1, upline:0, rank:'MD',  status:'active',   country:'KZ', city:'Шымкент', joined:'2025-12-15', personal_cv:140, team_cv:180, team_size:9,  last_active:'2026-04-15' },
-  { id:5,  name:'Виктор',   last_name:'Лапин',       ref:'VL-RB',   level:1, upline:0, rank:'ACT', status:'inactive', country:'RU', city:'СПб',     joined:'2026-01-10', personal_cv:60,  team_cv:80,  team_size:3,  last_active:'2026-03-02' },
-  { id:6,  name:'Аружан',   last_name:'Темирова',    ref:'AT-NEW',  level:1, upline:0, rank:'NEW', status:'new',      country:'KZ', city:'Караганда', joined:'2026-04-02', personal_cv:40,  team_cv:40,  team_size:0,  last_active:'2026-04-18' },
-
-  // Линия 2 — под Айдаром
-  { id:7,  name:'Жулдыз',   last_name:'Сериккызы',   ref:'ZHS-A1',  level:2, upline:1, rank:'MD',  status:'active',   country:'KZ', city:'Алматы',  joined:'2025-10-18', personal_cv:130, team_cv:200, team_size:11, last_active:'2026-04-18' },
-  { id:8,  name:'Расул',    last_name:'Жумабаев',    ref:'RJ-A2',   level:2, upline:1, rank:'ACT', status:'active',   country:'KZ', city:'Тараз',   joined:'2025-12-04', personal_cv:90,  team_cv:120, team_size:5,  last_active:'2026-04-14' },
-  { id:9,  name:'Камила',   last_name:'Орынбасар',   ref:'KO-A3',   level:2, upline:1, rank:'NEW', status:'new',      country:'KZ', city:'Алматы',  joined:'2026-03-25', personal_cv:50,  team_cv:50,  team_size:0,  last_active:'2026-04-17' },
-  // Линия 2 — под Жанной
-  { id:10, name:'Эльвира',  last_name:'Сейтжанова',  ref:'ES-J1',   level:2, upline:2, rank:'MD',  status:'active',   country:'KZ', city:'Астана',  joined:'2025-11-30', personal_cv:120, team_cv:160, team_size:8,  last_active:'2026-04-18' },
-  { id:11, name:'Самат',    last_name:'Жаксыбеков',  ref:'SZH-J2',  level:2, upline:2, rank:'ACT', status:'inactive', country:'KZ', city:'Кокшетау',joined:'2026-01-22', personal_cv:70,  team_cv:90,  team_size:2,  last_active:'2026-02-28' },
-  // Линия 2 — под Олегом
-  { id:12, name:'Анна',     last_name:'Семёнова',    ref:'AS-O1',   level:2, upline:3, rank:'ACT', status:'active',   country:'RU', city:'Казань',  joined:'2026-01-08', personal_cv:100, team_cv:140, team_size:5,  last_active:'2026-04-17' },
-
-  // Линия 3 — под Жулдыз
-  { id:13, name:'Бекзат',   last_name:'Махамбетов',  ref:'BM-Z1',   level:3, upline:7, rank:'NEW', status:'new',      country:'KZ', city:'Алматы',  joined:'2026-03-30', personal_cv:30,  team_cv:30,  team_size:0,  last_active:'2026-04-18' },
-  { id:14, name:'Гульмира', last_name:'Ержанова',    ref:'GE-Z2',   level:3, upline:7, rank:'ACT', status:'active',   country:'KZ', city:'Тараз',   joined:'2026-02-14', personal_cv:80,  team_cv:80,  team_size:0,  last_active:'2026-04-16' },
-  // Линия 3 — под Эльвирой
-  { id:15, name:'Игорь',    last_name:'Беляков',     ref:'IB-E1',   level:3, upline:10, rank:'NEW',status:'new',      country:'RU', city:'Москва',  joined:'2026-04-05', personal_cv:20,  team_cv:20,  team_size:0,  last_active:'2026-04-13' },
-  { id:16, name:'Лейла',    last_name:'Жакупова',    ref:'LZH-E2',  level:3, upline:10, rank:'ACT',status:'active',   country:'KZ', city:'Астана',  joined:'2026-02-28', personal_cv:60,  team_cv:60,  team_size:0,  last_active:'2026-04-18' },
-];
+function esc(s) {
+  return String(s ?? '').replace(/[&<>"']/g, c => (
+    { '&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;' }[c]
+  ));
+}
+function splitName(full) {
+  const parts = String(full||'').trim().split(/\s+/);
+  return { first: parts[0]||'', last: parts.slice(1).join(' ') };
+}
+function initialsOf(p) {
+  const n = splitName(p.name);
+  return `${(n.first[0]||'?').toUpperCase()}${(n.last[0]||'').toUpperCase()}`;
+}
+function statusOf(p) {
+  if (isNewPartner(p)) return 'new';
+  return p.is_active ? 'active' : 'inactive';
+}
+function rankKey(p) {
+  const r = (p.rank||'').toUpperCase();
+  return RANK_MAP[r] ? r : (p.is_active ? 'ACT' : 'NEW');
+}
 
 let lineFilter = 'all';
 let statusFilter = 'all';
 let pnSearch = '';
 
 function findUpline(p) {
-  if (!p.upline) return { name:'Сайра (вы)', ref:MY_REF };
-  const u = PARTNERS.find(x => x.id === p.upline);
-  return u ? { name:`${u.name} ${u.last_name}`, ref:u.ref } : { name:'—', ref:'—' };
+  if (!p.upline_id || (me && p.upline_id === me.id)) return { name:'Вы', ref:MY_REF };
+  const u = PARTNERS.find(x => x.id === p.upline_id);
+  return u ? { name: u.name, ref: u.ref_code || '—' } : { name:'—', ref:'—' };
 }
 function downlineCount(id) {
-  return PARTNERS.filter(p => p.upline === id).length;
+  return PARTNERS.filter(p => p.upline_id === id).length;
+}
+function teamSizeOf(id) {
+  const direct = PARTNERS.filter(p => p.upline_id === id);
+  let total = direct.length;
+  for (const d of direct) total += teamSizeOf(d.id);
+  return total;
 }
 function isNewPartner(p) {
-  const d = new Date(p.joined);
-  const cutoff = new Date('2026-04-18'); cutoff.setDate(cutoff.getDate()-30);
+  if (!p.created_at) return false;
+  const d = new Date(p.created_at);
+  const cutoff = new Date(); cutoff.setDate(cutoff.getDate()-30);
   return d >= cutoff;
 }
 
 function updateStats() {
   const total = PARTNERS.length;
-  const active = PARTNERS.filter(p => p.status === 'active').length;
-  const depth = Math.max(...PARTNERS.map(p => p.level), 0);
-  const cv = PARTNERS.reduce((s,p) => s + p.team_cv, 0);
+  const active = PARTNERS.filter(p => p.is_active).length;
+  const depth = Math.max(...PARTNERS.map(p => p.level||0), 0);
+  const cv = PARTNERS.reduce((s,p) => s + (Number(p.group_volume)||0), 0);
   const newCount = PARTNERS.filter(isNewPartner).length;
   document.getElementById('st-team').textContent = total;
   document.getElementById('st-team-total').textContent = total;
@@ -279,16 +284,16 @@ function renderPartners() {
       if (lv === 3) { if (p.level < 3) return false; }
       else { if (p.level !== lv) return false; }
     }
+    const st = statusOf(p);
     if (statusFilter === 'new') { if (!isNewPartner(p)) return false; }
-    else if (statusFilter !== 'all' && p.status !== statusFilter) return false;
+    else if (statusFilter !== 'all' && st !== statusFilter) return false;
     if (!q) return true;
-    const r = RANK_MAP[p.rank]?.label || '';
-    const hay = `${p.name} ${p.last_name} ${p.ref} ${p.city} ${r}`.toLowerCase();
+    const r = RANK_MAP[rankKey(p)]?.label || '';
+    const hay = `${p.name||''} ${p.ref_code||''} ${p.city||''} ${r}`.toLowerCase();
     return hay.includes(q);
   });
 
-  // Сортировка: по линии, затем по объёму команды убыв.
-  filtered.sort((a,b) => a.level - b.level || b.team_cv - a.team_cv);
+  filtered.sort((a,b) => a.level - b.level || (Number(b.group_volume)||0) - (Number(a.group_volume)||0));
 
   if (filtered.length === 0) {
     list.innerHTML = '';
@@ -298,21 +303,23 @@ function renderPartners() {
   empty.style.display = 'none';
 
   list.innerHTML = filtered.map(p => {
-    const r = RANK_MAP[p.rank];
+    const r = RANK_MAP[rankKey(p)];
+    const st = statusOf(p);
     const lvCls = p.level === 1 ? 'l1' : p.level === 2 ? 'l2' : 'l3';
     const indent = lineFilter === 'all' ? `pn-indent ${lvCls}` : '';
-    const initials = `${p.name[0]}${p.last_name[0]}`;
+    const ts = teamSizeOf(p.id);
     const dl = downlineCount(p.id);
+    const cv = Number(p.group_volume)||0;
     return `
-      <div class="ti lead-ti ${indent}" onclick="openPnModal(${p.id})">
-        <div class="pn-status-dot ${p.status}" title="${STATUS_MAP[p.status].label}"></div>
-        <div class="la lead-ava" style="width:34px;height:34px;font-size:12px">${initials}</div>
+      <div class="ti lead-ti ${indent}" onclick="openPnModal('${p.id}')">
+        <div class="pn-status-dot ${st}" title="${STATUS_MAP[st].label}"></div>
+        <div class="la lead-ava" style="width:34px;height:34px;font-size:12px">${initialsOf(p)}</div>
         <div class="ti-b">
-          <div class="ti-t">${p.name} ${p.last_name} <span class="pn-lvl ${lvCls}">L${p.level}</span></div>
+          <div class="ti-t">${esc(p.name)} <span class="pn-lvl ${lvCls}">L${p.level}</span></div>
           <div class="pn-meta">
-            <span>📍 ${p.city}</span>
-            <span>👥 <b>${p.team_size}</b></span>
-            <span>💎 <b>${p.team_cv}</b> CV</span>
+            <span>📍 ${esc(p.city||'—')}</span>
+            <span>👥 <b>${ts}</b></span>
+            <span>💎 <b>${cv}</b> CV</span>
             ${dl ? `<span>⬇️ <b>${dl}</b> в линии</span>` : ''}
           </div>
         </div>
@@ -322,21 +329,22 @@ function renderPartners() {
 }
 
 function renderLeaderboard() {
-  const top = [...PARTNERS].sort((a,b) => b.team_cv - a.team_cv).slice(0,5);
+  const top = [...PARTNERS].sort((a,b) => (Number(b.group_volume)||0) - (Number(a.group_volume)||0)).slice(0,5);
   const ll = document.getElementById('lb-list');
+  if (!top.length) { ll.innerHTML = '<div class="leads-empty" style="padding:16px"><p style="font-size:12px">Пока нет партнёров в команде.</p></div>'; return; }
   ll.innerHTML = top.map((p,i) => {
-    const r = RANK_MAP[p.rank];
+    const r = RANK_MAP[rankKey(p)];
     const place = i === 0 ? 'g' : i === 1 ? 's' : i === 2 ? 'b' : '';
     const medal = i === 0 ? '🥇' : i === 1 ? '🥈' : i === 2 ? '🥉' : `#${i+1}`;
     return `
-      <div class="li" onclick="openPnModal(${p.id})" style="cursor:pointer">
+      <div class="li" onclick="openPnModal('${p.id}')" style="cursor:pointer">
         <div class="lr ${place}">${medal}</div>
-        <div class="la lead-ava" style="width:30px;height:30px;font-size:11px">${p.name[0]}${p.last_name[0]}</div>
+        <div class="la lead-ava" style="width:30px;height:30px;font-size:11px">${initialsOf(p)}</div>
         <div class="li-i">
-          <div class="li-n">${p.name} ${p.last_name}</div>
-          <div class="li-s">L${p.level} · ${r.short} · ${p.team_size} в команде</div>
+          <div class="li-n">${esc(p.name)}</div>
+          <div class="li-s">L${p.level} · ${r.short} · ${teamSizeOf(p.id)} в команде</div>
         </div>
-        <div class="li-p">${p.team_cv}</div>
+        <div class="li-p">${Number(p.group_volume)||0}</div>
       </div>`;
   }).join('');
 }
@@ -346,8 +354,8 @@ function renderLineStats() {
   const el = document.getElementById('line-stats');
   el.innerHTML = lines.map(lv => {
     const inLine = PARTNERS.filter(p => lv === 3 ? p.level >= 3 : p.level === lv);
-    const active = inLine.filter(p => p.status === 'active').length;
-    const cv = inLine.reduce((s,p) => s + p.team_cv, 0);
+    const active = inLine.filter(p => p.is_active).length;
+    const cv = inLine.reduce((s,p) => s + (Number(p.group_volume)||0), 0);
     const lvCls = `l${lv}`;
     const label = lv === 3 ? 'L3+' : `L${lv}`;
     return `
@@ -379,39 +387,42 @@ document.getElementById('pn-search').addEventListener('input', e => { pnSearch =
 function openPnModal(id) {
   const p = PARTNERS.find(x => x.id === id);
   if (!p) return;
-  const r = RANK_MAP[p.rank];
-  const st = STATUS_MAP[p.status];
+  const r = RANK_MAP[rankKey(p)];
+  const st = STATUS_MAP[statusOf(p)];
   const upl = findUpline(p);
   const dl = downlineCount(p.id);
-  const refLink = `https://sairateam.com/?ref=${p.ref}`;
+  const ts = teamSizeOf(p.id);
+  const refCode = p.ref_code || '—';
+  const refLink = p.ref_code ? `https://sairateam.com/?ref=${p.ref_code}` : '';
+  const joined = p.created_at ? p.created_at.slice(0,10) : '—';
   const body = document.getElementById('pn-modal-body');
   body.innerHTML = `
     <div class="modal-head">
-      <div class="la lead-ava">${p.name[0]}${p.last_name[0]}</div>
+      <div class="la lead-ava">${initialsOf(p)}</div>
       <div>
-        <div class="modal-ttl">${p.name} ${p.last_name}</div>
-        <div class="modal-sub">L${p.level} · ${p.city}, ${p.country} · в команде с ${p.joined}</div>
+        <div class="modal-ttl">${esc(p.name)}</div>
+        <div class="modal-sub">L${p.level} · ${esc(p.city||'—')}, ${esc(p.country||'—')} · в команде с ${joined}</div>
       </div>
       <div class="pn-rank ${r.cls}" style="margin-left:auto">${r.short}</div>
     </div>
     <div class="modal-grid">
-      <div class="mg-row"><span class="mg-k">${st.icon} Статус</span><span class="mg-v">${st.label} · был ${p.last_active}</span></div>
+      <div class="mg-row"><span class="mg-k">${st.icon} Статус</span><span class="mg-v">${st.label}</span></div>
       <div class="mg-row"><span class="mg-k">⭐ Ранг</span><span class="mg-v">${r.label}</span></div>
-      <div class="mg-row"><span class="mg-k">⬆️ Спонсор</span><span class="mg-v">${upl.name} <span style="color:var(--td);font-weight:500">(${upl.ref})</span></span></div>
-      <div class="mg-row"><span class="mg-k">🔗 Реф-код</span><span class="mg-v" style="font-family:'JetBrains Mono',monospace;color:var(--azure)">${p.ref}</span></div>
-      <div class="mg-row"><span class="mg-k">💼 Личный CV</span><span class="mg-v">${p.personal_cv}</span></div>
-      <div class="mg-row"><span class="mg-k">💎 Командный CV</span><span class="mg-v">${p.team_cv}</span></div>
-      <div class="mg-row"><span class="mg-k">👥 В команде</span><span class="mg-v">${p.team_size} человек</span></div>
+      <div class="mg-row"><span class="mg-k">⬆️ Спонсор</span><span class="mg-v">${esc(upl.name)} <span style="color:var(--td);font-weight:500">(${esc(upl.ref)})</span></span></div>
+      <div class="mg-row"><span class="mg-k">🔗 Реф-код</span><span class="mg-v" style="font-family:'JetBrains Mono',monospace;color:var(--azure)">${esc(refCode)}</span></div>
+      <div class="mg-row"><span class="mg-k">💼 Личный CV</span><span class="mg-v">${Number(p.personal_volume)||0}</span></div>
+      <div class="mg-row"><span class="mg-k">💎 Командный CV</span><span class="mg-v">${Number(p.group_volume)||0}</span></div>
+      <div class="mg-row"><span class="mg-k">👥 В команде</span><span class="mg-v">${ts} человек</span></div>
       <div class="mg-row"><span class="mg-k">⬇️ Прямые приглашения</span><span class="mg-v">${dl}</span></div>
     </div>
     <div class="modal-actions">
-      <button class="mbtn mbtn-p" onclick="copyPartnerLink('${refLink}')">🔗 Копировать его реф-ссылку</button>
-      <button class="mbtn mbtn-msg" onclick="msgPartner(${p.id})">💬 Написать</button>
-      <button class="mbtn mbtn-ai" onclick="partnerStats(${p.id})">📊 Подробная статистика</button>
+      ${refLink ? `<button class="mbtn mbtn-p" onclick="copyPartnerLink('${refLink}')">🔗 Копировать его реф-ссылку</button>` : ''}
+      <button class="mbtn mbtn-msg" onclick="msgPartner('${p.id}')">💬 Написать</button>
+      <button class="mbtn mbtn-ai" onclick="partnerStats('${p.id}')">📊 Подробная статистика</button>
     </div>
     <div class="modal-actions" style="margin-top:8px">
-      <button class="mbtn mbtn-g" onclick="partnerLeads(${p.id})">🎯 Лиды партнёра</button>
-      ${dl ? `<button class="mbtn" onclick="showDownline(${p.id})">⬇️ Его команда (${dl})</button>` : ''}
+      <button class="mbtn mbtn-g" onclick="partnerLeads('${p.id}')">🎯 Лиды партнёра</button>
+      ${dl ? `<button class="mbtn" onclick="showDownline('${p.id}')">⬇️ Его команда (${dl})</button>` : ''}
     </div>
   `;
   document.getElementById('pn-modal').classList.add('active');
@@ -438,48 +449,85 @@ function copyPartnerLink(link) {
 }
 function msgPartner(id) {
   const p = PARTNERS.find(x => x.id === id);
-  showToast(`💬 Чат с ${p.name} появится после интеграции внутренних сообщений.`);
+  showToast(`💬 Чат с ${p?.name||''} появится после интеграции внутренних сообщений.`);
 }
 function partnerStats(id) { showToast('📊 Детальная статистика появится в следующей итерации.'); }
 function partnerLeads(id) {
   const p = PARTNERS.find(x => x.id === id);
-  showToast(`🎯 Фильтр по партнёру появится в leads.html (партнёр: ${p.name}).`);
+  showToast(`🎯 Фильтр по партнёру появится в leads.html (партнёр: ${p?.name||''}).`);
 }
 function showDownline(id) {
   closePnModal();
   pnSearch = '';
   document.getElementById('pn-search').value = '';
-  // упрощённо: показываем всех чьи upline = id (без рекурсии глубже)
   const list = document.getElementById('pn-list');
-  const dl = PARTNERS.filter(p => p.upline === id);
+  const dl = PARTNERS.filter(p => p.upline_id === id);
   const upline = PARTNERS.find(p => p.id === id);
   if (dl.length === 0) { showToast('У этого партнёра пока нет прямых приглашений.'); return; }
-  showToast(`⬇️ Команда ${upline.name}: ${dl.length} партнёров`);
-  // Снимаем активные фильтры, показываем только downline
+  showToast(`⬇️ Команда ${upline?.name||''}: ${dl.length} партнёров`);
   document.querySelectorAll('#pn-line .pt').forEach(b => b.classList.remove('active'));
   document.querySelector('#pn-line .pt[data-l="all"]').classList.add('active');
   lineFilter = 'all';
   document.getElementById('pn-empty').style.display = 'none';
   list.innerHTML = dl.map(p => {
-    const r = RANK_MAP[p.rank];
+    const r = RANK_MAP[rankKey(p)];
+    const st = statusOf(p);
     const lvCls = p.level === 1 ? 'l1' : p.level === 2 ? 'l2' : 'l3';
     return `
-      <div class="ti lead-ti" onclick="openPnModal(${p.id})">
-        <div class="pn-status-dot ${p.status}"></div>
-        <div class="la lead-ava" style="width:34px;height:34px;font-size:12px">${p.name[0]}${p.last_name[0]}</div>
+      <div class="ti lead-ti" onclick="openPnModal('${p.id}')">
+        <div class="pn-status-dot ${st}"></div>
+        <div class="la lead-ava" style="width:34px;height:34px;font-size:12px">${initialsOf(p)}</div>
         <div class="ti-b">
-          <div class="ti-t">${p.name} ${p.last_name} <span class="pn-lvl ${lvCls}">L${p.level}</span></div>
-          <div class="pn-meta"><span>📍 ${p.city}</span><span>👥 <b>${p.team_size}</b></span><span>💎 <b>${p.team_cv}</b> CV</span></div>
+          <div class="ti-t">${esc(p.name)} <span class="pn-lvl ${lvCls}">L${p.level}</span></div>
+          <div class="pn-meta"><span>📍 ${esc(p.city||'—')}</span><span>👥 <b>${teamSizeOf(p.id)}</b></span><span>💎 <b>${Number(p.group_volume)||0}</b> CV</span></div>
         </div>
         <div class="pn-rank ${r.cls}">${r.short}</div>
       </div>`;
   }).join('');
 }
 
-updateStats();
-renderPartners();
-renderLeaderboard();
-renderLineStats();
+// ===== LOAD =====
+function buildTeam(allRows, rootId) {
+  // BFS: из всех partners берём только тех, кто под rootId (прямые и косвенные), и проставляем level.
+  const byUp = {};
+  for (const p of allRows) {
+    const u = p.upline_id || '_root';
+    (byUp[u] ||= []).push(p);
+  }
+  const result = [];
+  const queue = (byUp[rootId] || []).map(p => ({ ...p, level:1 }));
+  while (queue.length) {
+    const p = queue.shift();
+    result.push(p);
+    const children = byUp[p.id] || [];
+    for (const c of children) queue.push({ ...c, level: p.level + 1 });
+  }
+  return result;
+}
+
+async function loadTeam() {
+  try {
+    me = await getCurrentPartner();
+    if (!me) {
+      document.getElementById('pn-list').innerHTML = '<div class="leads-empty"><p>Партнёр не найден. Обратитесь к администратору.</p></div>';
+      return;
+    }
+    MY_REF = me.ref_code || '—';
+    document.getElementById('ref-code').textContent = MY_REF;
+    document.getElementById('ref-url').textContent = `https://sairateam.com/?ref=${MY_REF}`;
+
+    const cols = 'id,name,ref_code,upline_id,rank,is_active,personal_volume,group_volume,city,country,avatar_url,created_at';
+    const all = await sb('GET', `partners?select=${cols}`);
+    PARTNERS = buildTeam(all || [], me.id);
+
+    updateStats(); renderPartners(); renderLeaderboard(); renderLineStats();
+  } catch (e) {
+    console.error('loadTeam:', e);
+    document.getElementById('pn-list').innerHTML = `<div class="leads-empty"><p>Ошибка загрузки: ${esc(e.message)}</p></div>`;
+  }
+}
+
+loadTeam();
 </script>
 </body>
 </html>

@@ -214,8 +214,8 @@
           <div class="set-d">Отображается в письмах, подписи шаблонов через <code>{{my_name}}</code></div>
         </div>
         <div class="kv-grid">
-          <input type="text" class="set-inp" id="f-firstname" placeholder="Имя" value="Сайра">
-          <input type="text" class="set-inp" id="f-lastname" placeholder="Фамилия" value="Алимжанова">
+          <input type="text" class="set-inp" id="f-firstname" placeholder="Имя">
+          <input type="text" class="set-inp" id="f-lastname" placeholder="Фамилия">
         </div>
       </div>
 
@@ -224,7 +224,7 @@
           <div class="set-t">Email</div>
           <div class="set-d">Для уведомлений и восстановления пароля. Используется как логин.</div>
         </div>
-        <input type="email" class="set-inp" id="f-email" value="saira@sairateam.com">
+        <input type="email" class="set-inp" id="f-email" placeholder="you@example.com">
       </div>
 
       <div class="set-row stack">
@@ -232,7 +232,7 @@
           <div class="set-t">Телефон</div>
           <div class="set-d">Формат E.164 (<code>+77011234567</code>). Используется для WhatsApp-привязки.</div>
         </div>
-        <input type="tel" class="set-inp" id="f-phone" value="+77011234567">
+        <input type="tel" class="set-inp" id="f-phone" placeholder="+77011234567">
       </div>
 
       <div class="set-row stack">
@@ -240,7 +240,7 @@
           <div class="set-t">Город</div>
           <div class="set-d">Подставляется в шаблоны как <code>{{my_city}}</code>, используется для таргетинга лидов</div>
         </div>
-        <input type="text" class="set-inp" id="f-city" value="Алматы">
+        <input type="text" class="set-inp" id="f-city" placeholder="Алматы">
       </div>
 
       <div class="set-row stack">
@@ -248,7 +248,7 @@
           <div class="set-t">О себе / bio</div>
           <div class="set-d">Короткое представление (до 280 символов). AI использует как контекст в первых сообщениях.</div>
         </div>
-        <textarea class="set-txt" id="f-bio" maxlength="280">Team leader InCruises, 3 года в индустрии путешествий. Помогаю людям открывать мир через клуб — не обещая, а показывая цифры.</textarea>
+        <textarea class="set-txt" id="f-bio" maxlength="280" placeholder="Расскажите о себе коротко…"></textarea>
       </div>
 
       <div class="set-row stack">
@@ -257,7 +257,7 @@
           <div class="set-d">Важно для tasks-напоминаний и часов тишины AI-агента.</div>
         </div>
         <select class="set-sel" id="f-tz">
-          <option value="Asia/Almaty" selected>Алматы (UTC+5)</option>
+          <option value="Asia/Almaty">Алматы (UTC+5)</option>
           <option value="Asia/Aqtau">Актау (UTC+5)</option>
           <option value="Europe/Moscow">Москва (UTC+3)</option>
           <option value="Europe/Kiev">Киев (UTC+2)</option>
@@ -287,7 +287,7 @@
           <div class="set-d">Присваивается системой, не редактируется. Это ваш идентификатор в команде.</div>
         </div>
         <div class="set-r">
-          <input type="text" class="set-inp mono small ro" id="f-refcode" value="TEST001" readonly>
+          <input type="text" class="set-inp mono small ro" id="f-refcode" value="—" readonly>
           <button class="mbtn mbtn-p" onclick="copyRef()">📋</button>
         </div>
       </div>
@@ -298,7 +298,7 @@
           <div class="set-d">Основная ссылка на лендинг. Открывается из кнопки «Пригласить» в контактах.</div>
         </div>
         <div class="set-r">
-          <input type="text" class="set-inp mono ro" id="f-reflink" value="https://sairateam.com/?ref=TEST001" readonly style="width:280px">
+          <input type="text" class="set-inp mono ro" id="f-reflink" value="" readonly style="width:280px">
           <button class="mbtn mbtn-p" onclick="copyRefLink()">📋</button>
         </div>
       </div>
@@ -308,7 +308,7 @@
           <div class="set-t">Текущий ранг</div>
           <div class="set-d">Рассчитывается из личного и групповых объёмов. Подробнее — вкладка <b>Структура</b>.</div>
         </div>
-        <div class="set-r"><span class="badge-compl" style="background:rgba(255,183,3,.12);color:var(--sun);border-color:rgba(255,183,3,.25)"><i>⭐</i> SMD · $1 487</span></div>
+        <div class="set-r"><span class="badge-compl" id="f-rank-badge" style="background:rgba(255,183,3,.12);color:var(--sun);border-color:rgba(255,183,3,.25)"><i>⭐</i> <span id="f-rank">—</span></span></div>
       </div>
 
       <div class="set-row">
@@ -316,7 +316,7 @@
           <div class="set-t">Upline / спонсор</div>
           <div class="set-d">Партнёр, пригласивший вас в команду. Фиксируется при регистрации.</div>
         </div>
-        <div class="set-r"><b style="color:var(--tb)">Марат Нурсапа</b> · <span style="color:var(--td);font-family:monospace;font-size:11px">MARAT-N</span></div>
+        <div class="set-r" id="f-upline"><span style="color:var(--td)">—</span></div>
       </div>
 
       <div class="set-row">
@@ -324,7 +324,7 @@
           <div class="set-t">В команде с</div>
           <div class="set-d">Дата регистрации в <code>public.partners</code>.</div>
         </div>
-        <div class="set-r"><b style="color:var(--tb)">2024-09-12</b> · <span style="color:var(--td)">1 год 7 мес.</span></div>
+        <div class="set-r" id="f-since"><span style="color:var(--td)">—</span></div>
       </div>
 
       <div class="set-row">
@@ -332,7 +332,7 @@
           <div class="set-t">Статус аккаунта</div>
           <div class="set-d">Активные партнёры получают лиды с лендинга и видят полный дашборд.</div>
         </div>
-        <div class="set-r"><span class="int-dot on"></span><b style="color:var(--green)">Активен</b></div>
+        <div class="set-r" id="f-status"><span class="int-dot off"></span><b style="color:var(--td)">—</b></div>
       </div>
     </div>
   </div>
@@ -450,10 +450,10 @@
         <div class="int-ico tg">✈️</div>
         <div class="int-b">
           <div class="int-t">Telegram</div>
-          <div class="int-s"><span class="int-dot on" id="dot-tg"></span><span id="lbl-tg">Подключено · @sairateam_bot · вебхук активен</span></div>
+          <div class="int-s"><span class="int-dot off" id="dot-tg"></span><span id="lbl-tg">Не подключено</span></div>
         </div>
         <div class="set-r">
-          <button class="mbtn" onclick="toggleInt('tg')" id="btn-tg">Отключить</button>
+          <button class="mbtn mbtn-p" onclick="toggleInt('tg')" id="btn-tg">Подключить</button>
         </div>
       </div>
 
@@ -472,10 +472,10 @@
         <div class="int-ico em">✉️</div>
         <div class="int-b">
           <div class="int-t">Email (SMTP)</div>
-          <div class="int-s"><span class="int-dot on" id="dot-em"></span><span id="lbl-em">Подключено · saira@sairateam.com · Yandex 360</span></div>
+          <div class="int-s"><span class="int-dot off" id="dot-em"></span><span id="lbl-em">Не настроено · SMTP required</span></div>
         </div>
         <div class="set-r">
-          <button class="mbtn" onclick="toggleInt('em')" id="btn-em">Настроить</button>
+          <button class="mbtn mbtn-p" onclick="toggleInt('em')" id="btn-em">Настроить</button>
         </div>
       </div>
     </div>
@@ -554,7 +554,7 @@
       <div class="set-row">
         <div class="set-l">
           <div class="set-t">Пароль</div>
-          <div class="set-d">Последняя смена: <b style="color:var(--tb)">2026-03-28</b></div>
+          <div class="set-d">Минимум 8 символов, включая цифру и букву.</div>
         </div>
         <div class="set-r">
           <button class="mbtn mbtn-p" onclick="openPwdModal()">🔑 Сменить пароль</button>
@@ -655,7 +655,7 @@
           <div class="set-t">Согласие на обработку персональных данных</div>
           <div class="set-d">Подписано при регистрации · <a href="../legal.html" target="_blank" style="color:var(--azure)">посмотреть текст</a></div>
         </div>
-        <div class="set-r"><span class="int-dot on"></span><b style="color:var(--green)">Подписано</b> · 2024-09-12</div>
+        <div class="set-r" id="f-consent"><span class="int-dot on"></span><b style="color:var(--green)">Подписано</b></div>
       </div>
 
       <div class="set-row">
@@ -735,24 +735,149 @@
   </div>
 </div>
 
+<script src="assets/js/api.js"></script>
 <script src="assets/js/dashboard.js"></script>
 <script>
 initDashboard('settings');
+requireAuth();
 
-// ====== MOCK STATE ======
-const INT_STATE = { wa:false, tg:true, ig:false, em:true };
-let aiMode   = 'semi';
-let aiTone   = 'warm';
-let ntfCh    = 'tg';
+// ======================================================================
+// STATE (populated by loadSettings)
+// ======================================================================
+let ME = null;               // partners row
+let SETTINGS = null;         // partner_settings row
+let INTEGRATIONS = {};       // { whatsapp:{row}, telegram:{row}, ... }
+let SETTINGS_LOADED = false;
 
-const MY_REF = 'TEST001';
-const MY_REF_LINK = 'https://sairateam.com/?ref=' + MY_REF;
+// provider: DB name (partner_integrations.provider) -> UI key used in DOM ids
+const PROV_TO_UI = { whatsapp:'wa', telegram:'tg', instagram:'ig', email:'em' };
+const UI_TO_PROV = { wa:'whatsapp', tg:'telegram', ig:'instagram', em:'email' };
 
-// ====== PROFILE COMPLETENESS ======
+const INT_LABEL = {
+  wa: { on:'Подключено · WhatsApp Business', off:'Не подключено · Meta Business + 360dialog / Twilio' },
+  tg: { on:'Подключено · Telegram',           off:'Не подключено' },
+  ig: { on:'Подключено · Instagram Direct',   off:'Не подключено · Meta Business Account required' },
+  em: { on:'Подключено · SMTP',               off:'Не настроено · SMTP required' },
+};
+
+// ======================================================================
+// HELPERS
+// ======================================================================
+function esc(s) {
+  return String(s ?? '').replace(/[&<>"']/g, c => (
+    { '&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;' }[c]
+  ));
+}
+function showToast(msg) {
+  let el = document.getElementById('app-toast');
+  if (!el) { el = document.createElement('div'); el.id = 'app-toast'; el.className = 'toast'; document.body.appendChild(el); }
+  el.textContent = msg; el.classList.add('show');
+  clearTimeout(showToast._tid);
+  showToast._tid = setTimeout(() => el.classList.remove('show'), 2800);
+}
+function setSeg(segId, value) {
+  document.querySelectorAll(`#${segId} button`).forEach(b => b.classList.toggle('active', b.dataset.v === value));
+}
+function toTimeInput(t) {
+  if (!t) return '';
+  return String(t).slice(0, 5);
+}
+function splitName(full) {
+  const parts = String(full || '').trim().split(/\s+/);
+  if (!parts.length || !parts[0]) return { first:'', last:'' };
+  return { first: parts[0], last: parts.slice(1).join(' ') };
+}
+
+// ======================================================================
+// LOAD
+// ======================================================================
+async function loadSettings() {
+  try {
+    ME = await getCurrentPartner();
+    if (!ME) { showToast('Партнёр не найден'); return; }
+  } catch (e) {
+    showToast('❌ ' + e.message); return;
+  }
+
+  const [settingsRows, integrationsRows, uplineRows] = await Promise.all([
+    sb('GET', `partner_settings?partner_id=eq.${ME.id}&select=*`).catch(() => []),
+    sb('GET', `partner_integrations?partner_id=eq.${ME.id}&select=*`).catch(() => []),
+    ME.upline_id
+      ? sb('GET', `partners?id=eq.${ME.upline_id}&select=name,ref_code`).catch(() => [])
+      : Promise.resolve([]),
+  ]);
+
+  SETTINGS = settingsRows[0] || null;
+  INTEGRATIONS = {};
+  for (const row of integrationsRows) INTEGRATIONS[row.provider] = row;
+
+  fillProfile(ME);
+  fillPartner(ME, uplineRows[0]);
+  fillAI(SETTINGS);
+  fillNotify(SETTINGS);
+  fillLegal(SETTINGS);
+  fillIntegrations();
+  updateCompleteness();
+  updateIntegrationsCount();
+  updateTop();
+
+  document.getElementById('st-login').textContent = 'сейчас';
+  SETTINGS_LOADED = true;
+}
+
+// ======================================================================
+// PROFILE (partners)
+// ======================================================================
 const profileFields = ['f-firstname','f-lastname','f-email','f-phone','f-city','f-bio','f-tz'];
+
+function fillProfile(p) {
+  const n = splitName(p.name);
+  document.getElementById('f-firstname').value = n.first;
+  document.getElementById('f-lastname').value  = n.last;
+  document.getElementById('f-email').value     = p.email || '';
+  document.getElementById('f-phone').value     = p.phone || '';
+  document.getElementById('f-city').value      = p.city  || '';
+  document.getElementById('f-bio').value       = p.bio   || '';
+  document.getElementById('f-tz').value        = p.timezone || 'Asia/Almaty';
+  document.getElementById('f-tz-echo').textContent = p.timezone || 'Asia/Almaty';
+}
+
+async function saveProfile() {
+  if (!ME) return;
+  const first = document.getElementById('f-firstname').value.trim();
+  const last  = document.getElementById('f-lastname').value.trim();
+  const full  = [first, last].filter(Boolean).join(' ') || first || last;
+  if (!full) { showToast('⚠️ Укажите имя.'); return; }
+  const payload = {
+    name:     full,
+    email:    document.getElementById('f-email').value.trim() || null,
+    phone:    document.getElementById('f-phone').value.trim() || null,
+    city:     document.getElementById('f-city').value.trim() || null,
+    bio:      document.getElementById('f-bio').value.trim() || null,
+    timezone: document.getElementById('f-tz').value,
+  };
+  try {
+    const rows = await sb('PATCH', `partners?id=eq.${ME.id}`, payload);
+    const updated = Array.isArray(rows) ? rows[0] : rows;
+    if (updated) {
+      Object.assign(ME, updated);
+      sessionStorage.setItem('sb_partner', JSON.stringify(ME));
+    }
+    showToast('💾 Профиль сохранён');
+    updateCompleteness();
+  } catch (e) {
+    showToast('❌ ' + e.message);
+  }
+}
+function resetProfile() {
+  if (!confirm('Сбросить несохранённые изменения?')) return;
+  if (ME) fillProfile(ME);
+  updateCompleteness();
+}
+
 function calcCompleteness() {
   const filled = profileFields.filter(id => {
-    const el = document.getElementById(id); return el && el.value && el.value.trim().length > 0;
+    const el = document.getElementById(id); return el && el.value && String(el.value).trim().length > 0;
   }).length;
   return Math.round((filled / profileFields.length) * 100);
 }
@@ -765,31 +890,6 @@ function updateCompleteness() {
   document.getElementById('st-compl-trend').textContent = pct === 100 ? '✓' : '+' + pct;
 }
 
-// ====== INTEGRATION COUNT ======
-function updateIntegrations() {
-  const on = Object.values(INT_STATE).filter(Boolean).length;
-  document.getElementById('st-int').textContent = on + ' / 4';
-  const ic = document.getElementById('int-count');
-  if (ic) ic.textContent = on;
-}
-
-// ====== AI / LOGIN BADGES ======
-function updateTop() {
-  document.getElementById('st-ai').textContent = document.getElementById('f-ai-on').checked
-    ? (aiMode === 'semi' ? 'Полу-авто' : 'Ручной') : 'OFF';
-  document.getElementById('st-login').textContent = 'сегодня · 09:14';
-}
-
-// ====== NAV ======
-document.getElementById('set-nav').addEventListener('click', e => {
-  const btn = e.target.closest('.pt'); if (!btn) return;
-  document.querySelectorAll('#set-nav .pt').forEach(b => b.classList.remove('active'));
-  btn.classList.add('active');
-  const target = document.querySelector(`.set-panel[data-p="${btn.dataset.s}"]`);
-  if (target) target.scrollIntoView({ behavior:'smooth', block:'start' });
-});
-
-// ====== PROFILE ======
 profileFields.forEach(id => {
   const el = document.getElementById(id);
   if (el) el.addEventListener('input', updateCompleteness);
@@ -798,117 +898,301 @@ document.getElementById('f-tz').addEventListener('change', e => {
   document.getElementById('f-tz-echo').textContent = e.target.value;
 });
 
-function saveProfile() {
-  updateCompleteness();
-  showToast('💾 Профиль сохранён локально. Запись в БД — после миграции partner_settings.');
-}
-function resetProfile() {
-  if (!confirm('Сбросить несохранённые изменения?')) return;
-  location.reload();
+// ======================================================================
+// PARTNER (read-only card)
+// ======================================================================
+function fillPartner(p, upline) {
+  const ref = p.ref_code || '—';
+  document.getElementById('f-refcode').value = ref;
+  document.getElementById('f-reflink').value = p.ref_code ? `https://sairateam.com/?ref=${p.ref_code}` : '';
+
+  document.getElementById('f-rank').textContent = p.rank || 'нет ранга';
+
+  document.getElementById('f-upline').innerHTML = upline
+    ? `<b style="color:var(--tb)">${esc(upline.name || '—')}</b> · <span style="color:var(--td);font-family:monospace;font-size:11px">${esc(upline.ref_code || '')}</span>`
+    : '<span style="color:var(--td)">Без спонсора</span>';
+
+  if (p.created_at) {
+    const d = new Date(p.created_at);
+    const iso = d.toISOString().slice(0, 10);
+    const days = Math.max(0, Math.floor((Date.now() - d.getTime()) / 86400000));
+    document.getElementById('f-since').innerHTML = `<b style="color:var(--tb)">${iso}</b> · <span style="color:var(--td)">${days} дн.</span>`;
+  }
+
+  const active = !!p.is_active;
+  document.getElementById('f-status').innerHTML = active
+    ? '<span class="int-dot on"></span><b style="color:var(--green)">Активен</b>'
+    : '<span class="int-dot off"></span><b style="color:var(--td)">Неактивен</b>';
 }
 
-// ====== PARTNER ======
 function copyRef() {
-  if (navigator.clipboard) navigator.clipboard.writeText(MY_REF).catch(() => {});
-  showToast('📋 Реф-код скопирован: ' + MY_REF);
+  const v = document.getElementById('f-refcode').value;
+  if (!v || v === '—') { showToast('Реф-код ещё не присвоен'); return; }
+  if (navigator.clipboard) navigator.clipboard.writeText(v).catch(() => {});
+  showToast('📋 Реф-код скопирован: ' + v);
 }
 function copyRefLink() {
-  if (navigator.clipboard) navigator.clipboard.writeText(MY_REF_LINK).catch(() => {});
+  const v = document.getElementById('f-reflink').value;
+  if (!v) { showToast('Реф-ссылка ещё не готова'); return; }
+  if (navigator.clipboard) navigator.clipboard.writeText(v).catch(() => {});
   showToast('📋 Реф-ссылка скопирована');
 }
 
-// ====== AI ======
-document.getElementById('f-ai-on').addEventListener('change', updateTop);
-
-document.getElementById('seg-mode').addEventListener('click', e => {
-  const b = e.target.closest('button'); if (!b) return;
-  document.querySelectorAll('#seg-mode button').forEach(x => x.classList.remove('active'));
-  b.classList.add('active'); aiMode = b.dataset.v; updateTop();
-  showToast(aiMode === 'semi' ? '🤖 Режим: Полуавтомат' : '✋ Режим: Ручной');
-});
-
-document.getElementById('seg-tone').addEventListener('click', e => {
-  const b = e.target.closest('button'); if (!b) return;
-  document.querySelectorAll('#seg-tone button').forEach(x => x.classList.remove('active'));
-  b.classList.add('active'); aiTone = b.dataset.v;
-});
-
-document.getElementById('seg-nch').addEventListener('click', e => {
-  const b = e.target.closest('button'); if (!b) return;
-  document.querySelectorAll('#seg-nch button').forEach(x => x.classList.remove('active'));
-  b.classList.add('active'); ntfCh = b.dataset.v;
-});
-
-// ====== MESSENGERS ======
-const INT_LABEL = {
-  wa: { on:'Подключено · Meta Business + 360dialog', off:'Не подключено · Meta Business + 360dialog / Twilio' },
-  tg: { on:'Подключено · @sairateam_bot · вебхук активен', off:'Не подключено' },
-  ig: { on:'Подключено · Meta Business', off:'Не подключено · Meta Business Account required' },
-  em: { on:'Подключено · saira@sairateam.com · Yandex 360', off:'Не настроено · SMTP required' },
-};
-function applyIntView(k) {
-  const on = INT_STATE[k];
-  document.getElementById('dot-'+k).classList.toggle('on', on);
-  document.getElementById('dot-'+k).classList.toggle('off', !on);
-  document.getElementById('lbl-'+k).textContent = on ? INT_LABEL[k].on : INT_LABEL[k].off;
-  const btn = document.getElementById('btn-'+k);
-  btn.textContent = on ? 'Отключить' : 'Подключить';
-  btn.className = 'mbtn' + (on ? '' : ' mbtn-p');
-  updateIntegrations();
-  updateTop();
+// ======================================================================
+// AI / NOTIFY / LEGAL (partner_settings) — autosave on change
+// ======================================================================
+function fillAI(s) {
+  if (!s) return;
+  document.getElementById('f-ai-on').checked = !!s.ai_enabled;
+  setSeg('seg-mode', s.ai_mode || 'semi');
+  setSeg('seg-tone', s.ai_tone || 'warm');
+  document.getElementById('f-ai-lang').value = s.ai_language || 'auto';
+  document.getElementById('f-quiet-from').value = toTimeInput(s.quiet_from) || '22:00';
+  document.getElementById('f-quiet-to').value   = toTimeInput(s.quiet_to)   || '09:00';
+  document.getElementById('f-fu').value = s.followup_delay_hours == null ? 'off' : String(s.followup_delay_hours);
+  document.getElementById('f-ai-welcome').checked = !!s.ai_welcome_auto;
 }
-function toggleInt(k) {
-  if (k === 'em') { showToast('✉️ Настройка SMTP — отдельная форма, появится вместе с миграцией.'); return; }
-  if (k === 'wa' && !INT_STATE.wa) { showToast('🟢 Для WABA нужен Meta Business ID — раздел в разработке.'); return; }
-  if (k === 'ig' && !INT_STATE.ig) { showToast('📷 Instagram Direct — требует Meta Business Account, раздел в разработке.'); return; }
-  INT_STATE[k] = !INT_STATE[k];
-  applyIntView(k);
-  showToast(INT_STATE[k] ? '🟢 Подключено' : '⚪ Отключено');
+function fillNotify(s) {
+  if (!s) return;
+  document.getElementById('n-lead').checked   = !!s.notify_new_lead;
+  document.getElementById('n-reply').checked  = !!s.notify_reply;
+  document.getElementById('n-task').checked   = !!s.notify_task;
+  document.getElementById('n-draft').checked  = !!s.notify_ai_draft;
+  document.getElementById('n-digest').checked = !!s.notify_digest;
+  document.getElementById('n-tree').checked   = !!s.notify_tree;
+  setSeg('seg-nch', s.notification_channel || 'tg');
+}
+function fillLegal(s) {
+  if (!s) return;
+  document.getElementById('n-mkt').checked = !!s.marketing_consent;
 }
 
-// ====== SECURITY ======
+async function patchSettings(payload, silent = false) {
+  if (!ME) return;
+  if (!SETTINGS) {
+    // no row yet — upsert via insert (partner_id is PK)
+    try {
+      const rows = await sb('POST', 'partner_settings', { partner_id: ME.id, ...payload });
+      SETTINGS = Array.isArray(rows) ? rows[0] : rows;
+      if (!silent) showToast('💾 Сохранено');
+    } catch (e) {
+      showToast('❌ ' + e.message);
+    }
+    return;
+  }
+  try {
+    const rows = await sb('PATCH', `partner_settings?partner_id=eq.${ME.id}`, payload);
+    const updated = Array.isArray(rows) ? rows[0] : rows;
+    if (updated) Object.assign(SETTINGS, updated);
+    if (!silent) showToast('💾 Сохранено');
+  } catch (e) {
+    showToast('❌ ' + e.message);
+  }
+}
+
+function bindAutosave() {
+  // AI
+  document.getElementById('f-ai-on').addEventListener('change', e => {
+    if (!SETTINGS_LOADED) return;
+    patchSettings({ ai_enabled: e.target.checked });
+    updateTop();
+  });
+  document.getElementById('seg-mode').addEventListener('click', e => {
+    const b = e.target.closest('button'); if (!b) return;
+    setSeg('seg-mode', b.dataset.v);
+    if (!SETTINGS_LOADED) return;
+    patchSettings({ ai_mode: b.dataset.v });
+    updateTop();
+    showToast(b.dataset.v === 'semi' ? '🤖 Режим: Полуавтомат' : '✋ Режим: Ручной');
+  });
+  document.getElementById('seg-tone').addEventListener('click', e => {
+    const b = e.target.closest('button'); if (!b) return;
+    setSeg('seg-tone', b.dataset.v);
+    if (!SETTINGS_LOADED) return;
+    patchSettings({ ai_tone: b.dataset.v });
+  });
+  document.getElementById('f-ai-lang').addEventListener('change', e => {
+    if (!SETTINGS_LOADED) return;
+    patchSettings({ ai_language: e.target.value });
+  });
+  document.getElementById('f-quiet-from').addEventListener('change', e => {
+    if (!SETTINGS_LOADED) return;
+    patchSettings({ quiet_from: e.target.value });
+  });
+  document.getElementById('f-quiet-to').addEventListener('change', e => {
+    if (!SETTINGS_LOADED) return;
+    patchSettings({ quiet_to: e.target.value });
+  });
+  document.getElementById('f-fu').addEventListener('change', e => {
+    if (!SETTINGS_LOADED) return;
+    const v = e.target.value === 'off' ? null : parseInt(e.target.value, 10);
+    patchSettings({ followup_delay_hours: v });
+  });
+  document.getElementById('f-ai-welcome').addEventListener('change', e => {
+    if (!SETTINGS_LOADED) return;
+    patchSettings({ ai_welcome_auto: e.target.checked });
+  });
+
+  // Notify
+  const notifyMap = {
+    'n-lead':   'notify_new_lead',
+    'n-reply':  'notify_reply',
+    'n-task':   'notify_task',
+    'n-draft':  'notify_ai_draft',
+    'n-digest': 'notify_digest',
+    'n-tree':   'notify_tree',
+  };
+  for (const [id, col] of Object.entries(notifyMap)) {
+    document.getElementById(id).addEventListener('change', e => {
+      if (!SETTINGS_LOADED) return;
+      patchSettings({ [col]: e.target.checked });
+    });
+  }
+  document.getElementById('seg-nch').addEventListener('click', e => {
+    const b = e.target.closest('button'); if (!b) return;
+    setSeg('seg-nch', b.dataset.v);
+    if (!SETTINGS_LOADED) return;
+    patchSettings({ notification_channel: b.dataset.v });
+  });
+
+  // Legal
+  document.getElementById('n-mkt').addEventListener('change', e => {
+    if (!SETTINGS_LOADED) return;
+    patchSettings({ marketing_consent: e.target.checked });
+  });
+}
+bindAutosave();
+
+// ======================================================================
+// TOP BADGES
+// ======================================================================
+function updateTop() {
+  const on = document.getElementById('f-ai-on').checked;
+  const modeBtn = document.querySelector('#seg-mode button.active');
+  const mode = modeBtn ? modeBtn.dataset.v : 'semi';
+  document.getElementById('st-ai').textContent = on ? (mode === 'semi' ? 'Полу-авто' : 'Ручной') : 'OFF';
+}
+
+// ======================================================================
+// MESSENGERS (partner_integrations)
+// ======================================================================
+function fillIntegrations() {
+  for (const ui of Object.keys(UI_TO_PROV)) applyIntView(ui);
+}
+function isConnected(uiKey) {
+  const row = INTEGRATIONS[UI_TO_PROV[uiKey]];
+  return !!(row && row.connected);
+}
+function applyIntView(ui) {
+  const on = isConnected(ui);
+  const dot = document.getElementById('dot-' + ui);
+  const lbl = document.getElementById('lbl-' + ui);
+  const btn = document.getElementById('btn-' + ui);
+  if (dot) { dot.classList.toggle('on', on); dot.classList.toggle('off', !on); }
+  if (lbl) lbl.textContent = on ? INT_LABEL[ui].on : INT_LABEL[ui].off;
+  if (btn) {
+    btn.textContent = on ? 'Отключить' : 'Подключить';
+    btn.className = 'mbtn' + (on ? '' : ' mbtn-p');
+  }
+  updateIntegrationsCount();
+}
+function updateIntegrationsCount() {
+  const total = Object.keys(UI_TO_PROV).length;
+  const on = Object.keys(UI_TO_PROV).filter(isConnected).length;
+  document.getElementById('st-int').textContent = `${on} / ${total}`;
+  const ic = document.getElementById('int-count');
+  if (ic) ic.textContent = on;
+}
+
+async function toggleInt(ui) {
+  if (!ME) return;
+  const provider = UI_TO_PROV[ui];
+  const row = INTEGRATIONS[provider];
+  const nextConnected = !(row && row.connected);
+  const nowIso = new Date().toISOString();
+
+  try {
+    if (row) {
+      const rows = await sb('PATCH', `partner_integrations?id=eq.${row.id}`, {
+        connected: nextConnected,
+        connected_at: nextConnected ? nowIso : null,
+        updated_at: nowIso,
+      });
+      INTEGRATIONS[provider] = (Array.isArray(rows) ? rows[0] : rows) || INTEGRATIONS[provider];
+    } else {
+      const rows = await sb('POST', 'partner_integrations', {
+        partner_id: ME.id,
+        provider,
+        connected: nextConnected,
+        connected_at: nextConnected ? nowIso : null,
+        config: {},
+      });
+      INTEGRATIONS[provider] = Array.isArray(rows) ? rows[0] : rows;
+    }
+    applyIntView(ui);
+    showToast(nextConnected ? '🟢 Подключено' : '⚪ Отключено');
+  } catch (e) {
+    showToast('❌ ' + e.message);
+  }
+}
+
+// ======================================================================
+// NAV (smooth scroll)
+// ======================================================================
+document.getElementById('set-nav').addEventListener('click', e => {
+  const btn = e.target.closest('.pt'); if (!btn) return;
+  document.querySelectorAll('#set-nav .pt').forEach(b => b.classList.remove('active'));
+  btn.classList.add('active');
+  const target = document.querySelector(`.set-panel[data-p="${btn.dataset.s}"]`);
+  if (target) target.scrollIntoView({ behavior:'smooth', block:'start' });
+});
+
+// ======================================================================
+// SECURITY — real auth calls
+// ======================================================================
 function openPwdModal() { document.getElementById('pwd-modal').classList.add('active'); }
 function closePwdModal() {
   document.getElementById('pwd-modal').classList.remove('active');
   ['pwd-old','pwd-new','pwd-new2'].forEach(id => document.getElementById(id).value = '');
 }
-function submitPwd() {
-  const o = document.getElementById('pwd-old').value;
-  const n = document.getElementById('pwd-new').value;
+async function submitPwd() {
+  const n  = document.getElementById('pwd-new').value;
   const n2 = document.getElementById('pwd-new2').value;
-  if (!o || !n) { showToast('⚠️ Заполните оба поля.'); return; }
+  if (!n) { showToast('⚠️ Введите новый пароль.'); return; }
   if (n.length < 8) { showToast('⚠️ Минимум 8 символов.'); return; }
   if (n !== n2) { showToast('⚠️ Пароли не совпадают.'); return; }
-  closePwdModal();
-  showToast('🔑 Смена пароля будет проведена через Supabase auth.updateUser().');
+  try {
+    await sbAuth('PUT', 'user', { password: n });
+    closePwdModal();
+    showToast('🔑 Пароль обновлён');
+  } catch (e) {
+    showToast('❌ ' + e.message);
+  }
 }
-function logoutOthers() {
+async function logoutOthers() {
   if (!confirm('Разлогинить все другие сессии?')) return;
-  showToast('⎋ Другие сессии завершены (будет через supabase.auth.signOut({ scope:\"others\" })).');
+  try {
+    await sbAuth('POST', 'logout?scope=others', {});
+    showToast('⎋ Другие сессии завершены');
+  } catch (e) {
+    showToast('❌ ' + e.message);
+  }
 }
 document.addEventListener('keydown', e => { if (e.key === 'Escape') closePwdModal(); });
 
-// ====== DANGER ======
+// ======================================================================
+// DANGER — placeholder
+// ======================================================================
 function deleteAccount() {
   const v = prompt('Введите слово "УДАЛИТЬ" для подтверждения:');
   if (v !== 'УДАЛИТЬ') { showToast('⚠️ Удаление отменено.'); return; }
-  showToast('🗑 Запрос на удаление отправлен. Обработка 24 часа.');
+  showToast('🗑 Удаление аккаунта — только через support (GDPR).');
 }
 
-// ====== TOAST (shared utility) ======
-function showToast(msg) {
-  let el = document.getElementById('app-toast');
-  if (!el) { el = document.createElement('div'); el.id = 'app-toast'; el.className = 'toast'; document.body.appendChild(el); }
-  el.textContent = msg; el.classList.add('show');
-  clearTimeout(showToast._tid);
-  showToast._tid = setTimeout(() => el.classList.remove('show'), 2800);
-}
-
-// ====== INIT ======
-Object.keys(INT_STATE).forEach(applyIntView);
-updateCompleteness();
-updateIntegrations();
-updateTop();
+// ======================================================================
+// INIT
+// ======================================================================
+loadSettings();
 </script>
 </body>
 </html>

@@ -80,7 +80,7 @@
     <div class="pnl-tabs" id="t-filter-src" style="padding:0 2px 6px">
       <button class="pt active" data-s="all">Все источники</button>
       <button class="pt" data-s="ai">🤖 AI</button>
-      <button class="pt" data-s="partner">👤 Я</button>
+      <button class="pt" data-s="self">👤 Я</button>
       <button class="pt" data-s="system">⚙️ Система</button>
     </div>
 
@@ -104,12 +104,13 @@
   </div>
 </div>
 
+<script src="assets/js/api.js"></script>
 <script src="assets/js/dashboard.js"></script>
 <script>
 initDashboard('tasks');
+requireAuth();
 
-// ===== Сегодня (фиксированный day-cursor для предсказуемых mock-сроков) =====
-const TODAY = new Date('2026-04-18T00:00:00');
+const TODAY = new Date(); TODAY.setHours(0,0,0,0);
 function fmtDateBadge(d) {
   const m = ['янв','фев','мар','апр','май','июн','июл','авг','сен','окт','ноя','дек'];
   return `${d.getDate()} ${m[d.getMonth()]}`;
@@ -117,50 +118,37 @@ function fmtDateBadge(d) {
 document.getElementById('t-today-date').textContent = fmtDateBadge(TODAY);
 
 const SRC_MAP = {
-  ai:      { label:'AI',      icon:'🤖' },
-  partner: { label:'Я',       icon:'👤' },
-  system:  { label:'Система', icon:'⚙️' },
+  ai:     { label:'AI',      icon:'🤖' },
+  self:   { label:'Я',       icon:'👤' },
+  system: { label:'Система', icon:'⚙️' },
 };
 const TYPE_MAP = {
-  call:      { label:'Звонок',     icon:'📞' },
-  message:   { label:'Сообщение',  icon:'💬' },
-  followup:  { label:'Follow-up',  icon:'🔁' },
-  meeting:   { label:'Встреча',    icon:'🤝' },
-  general:   { label:'Задача',     icon:'📌' },
-  reminder:  { label:'Напоминание',icon:'🔔' },
+  call:     { label:'Звонок',     icon:'📞' },
+  message:  { label:'Сообщение',  icon:'💬' },
+  followup: { label:'Follow-up',  icon:'🔁' },
+  meeting:  { label:'Встреча',    icon:'🤝' },
+  reminder: { label:'Напоминание',icon:'🔔' },
+  other:    { label:'Задача',     icon:'📌' },
 };
 const PRI_MAP = {
-  high:   { label:'Высокий',  cls:'pri-h' },
-  medium: { label:'Средний',  cls:'pri-m' },
-  low:    { label:'Низкий',   cls:'pri-l' },
+  high: { label:'Высокий', cls:'pri-h' },
+  mid:  { label:'Средний', cls:'pri-m' },
+  low:  { label:'Низкий',  cls:'pri-l' },
 };
 
-// ===== MOCK TASKS =====
-// due — ISO datetime (или null для done без срока)
-const TASKS = [
-  { id:1,  title:'Перезвонить Алие Сатпаевой',           desc:'Лид только что оставил заявку. Первый контакт в течение часа повышает конверсию в 2 раза.',
-    type:'call',     priority:'high',   source:'ai',      status:'pending', due:'2026-04-18T13:00:00', related:{ kind:'lead',    id:1, name:'Алия Сатпаева' } },
-  { id:2,  title:'Follow-up Марату Кенжебаеву',          desc:'Прошло 36 часов после первого сообщения, ответа нет. AI подготовил черновик напоминания.',
-    type:'followup', priority:'medium', source:'ai',      status:'pending', due:'2026-04-17T18:00:00', related:{ kind:'lead',    id:2, name:'Марат Кенжебаев' } },
-  { id:3,  title:'Отправить презентацию Дане',           desc:'Лид прошёл квалификацию, ждёт PDF-презентацию InCruises и расчёт по её бюджету.',
-    type:'message',  priority:'high',   source:'partner', status:'pending', due:'2026-04-18T20:00:00', related:{ kind:'lead',    id:3, name:'Дана Турсынова' } },
-  { id:4,  title:'День рождения у Айгерим',              desc:'Поздравить сестру. Хороший повод напомнить про InCruises без давления.',
-    type:'reminder', priority:'medium', source:'system',  status:'pending', due:'2026-04-19T09:00:00', related:{ kind:'contact', id:1, name:'Айгерим Сулейменова' } },
-  { id:5,  title:'AI-приглашение Бауржану',              desc:'AI готов сформировать персональное приглашение для контакта из «Друзей». Нужна ваша апрув на отправку.',
-    type:'message',  priority:'low',    source:'ai',      status:'pending', due:'2026-04-21T12:00:00', related:{ kind:'contact', id:2, name:'Бауржан Омаров' } },
-  { id:6,  title:'Подготовить план звонков на пятницу',  desc:'Сформировать список из 10 контактов категории «Знакомые» для холодного обзвона.',
-    type:'general',  priority:'medium', source:'partner', status:'pending', due:'2026-04-24T10:00:00', related:null },
-  { id:7,  title:'Написать Нурлану',                     desc:'Лид написал в Instagram, ждёт ответ. AI подготовил черновик первого сообщения.',
-    type:'message',  priority:'medium', source:'ai',      status:'pending', due:'2026-04-18T16:00:00', related:{ kind:'lead',    id:4, name:'Нурлан Баймухамбетов' } },
-  { id:8,  title:'Проверить отчёт по команде за неделю', desc:'Свериться по KPI: лиды, конверсии, активность партнёров второй линии.',
-    type:'general',  priority:'low',    source:'partner', status:'pending', due:'2026-04-23T18:00:00', related:null },
-  { id:9,  title:'Напомнить Сауле про круиз',            desc:'Клиентка ходила в круиз 2025, можно предложить апгрейд до Elite + реферальный план.',
-    type:'followup', priority:'medium', source:'system',  status:'pending', due:'2026-04-22T14:00:00', related:{ kind:'contact', id:5, name:'Сауле Исмагулова' } },
-  { id:10, title:'Связаться с Тимуром Ахметовым',        desc:'Квалифицированный лид. Завершён первый звонок, договорились о созвоне 16-го.',
-    type:'call',     priority:'high',   source:'ai',      status:'done',    due:'2026-04-16T15:00:00', completed_at:'2026-04-16T15:42:00', related:{ kind:'lead', id:8, name:'Тимур Ахметов' } },
-  { id:11, title:'Отправить материалы Елене Морозовой',  desc:'Конверсия закрыта, отправить welcome-pack и инструкцию по аккаунту.',
-    type:'message',  priority:'medium', source:'partner', status:'done',    due:'2026-04-15T11:00:00', completed_at:'2026-04-15T11:20:00', related:{ kind:'lead', id:5, name:'Елена Морозова' } },
-];
+let TASKS = [];
+let currentPartner = null;
+
+function esc(s) {
+  return String(s ?? '').replace(/[&<>"']/g, c => (
+    { '&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;' }[c]
+  ));
+}
+function relatedOf(t) {
+  if (t.lead) return { kind:'lead', id:t.lead_id, name:`${t.lead.name||''} ${t.lead.last_name||''}`.trim() };
+  if (t.contact) return { kind:'contact', id:t.contact_id, name:t.contact.name };
+  return null;
+}
 
 let whenFilter = 'all';
 let srcFilter = 'all';
@@ -168,9 +156,9 @@ let tSearch = '';
 
 // ===== helpers =====
 function dueBucket(t) {
-  if (t.status === 'done') return 'done';
-  if (!t.due) return 'week';
-  const d = new Date(t.due);
+  if (t.done) return 'done';
+  if (!t.due_at) return 'week';
+  const d = new Date(t.due_at);
   const day0 = new Date(TODAY); day0.setHours(0,0,0,0);
   const day1 = new Date(day0); day1.setDate(day1.getDate()+1);
   const day2 = new Date(day0); day2.setDate(day2.getDate()+2);
@@ -182,13 +170,13 @@ function dueBucket(t) {
   return 'later';
 }
 function dueBadgeText(t) {
-  if (t.status === 'done') return '✓ ' + (t.completed_at ? fmtShort(t.completed_at) : 'выполнено');
-  if (!t.due) return 'без срока';
+  if (t.done) return '✓ ' + (t.done_at ? fmtShort(t.done_at) : 'выполнено');
+  if (!t.due_at) return 'без срока';
   const b = dueBucket(t);
-  if (b === 'today')    return 'Сегодня · ' + fmtTime(t.due);
-  if (b === 'tomorrow') return 'Завтра · ' + fmtTime(t.due);
-  if (b === 'overdue')  return 'Просрочено · ' + fmtShort(t.due);
-  return fmtShort(t.due);
+  if (b === 'today')    return 'Сегодня · ' + fmtTime(t.due_at);
+  if (b === 'tomorrow') return 'Завтра · ' + fmtTime(t.due_at);
+  if (b === 'overdue')  return 'Просрочено · ' + fmtShort(t.due_at);
+  return fmtShort(t.due_at);
 }
 function dueBadgeClass(t) {
   const b = dueBucket(t);
@@ -209,10 +197,10 @@ function fmtShort(iso) {
 
 // ===== stats =====
 function updateStats() {
-  const today    = TASKS.filter(t => t.status==='pending' && dueBucket(t)==='today').length;
-  const week     = TASKS.filter(t => t.status==='pending' && ['today','tomorrow','week'].includes(dueBucket(t))).length;
-  const overdue  = TASKS.filter(t => t.status==='pending' && dueBucket(t)==='overdue').length;
-  const done     = TASKS.filter(t => t.status==='done').length;
+  const today    = TASKS.filter(t => !t.done && dueBucket(t)==='today').length;
+  const week     = TASKS.filter(t => !t.done && ['today','tomorrow','week'].includes(dueBucket(t))).length;
+  const overdue  = TASKS.filter(t => !t.done && dueBucket(t)==='overdue').length;
+  const done     = TASKS.filter(t => t.done).length;
   document.getElementById('st-today').textContent = today;
   document.getElementById('st-week').textContent  = week;
   document.getElementById('st-over').textContent  = overdue;
@@ -230,22 +218,20 @@ function renderTasks() {
 
   let filtered = TASKS.filter(t => {
     const b = dueBucket(t);
-    if (whenFilter === 'done')      { if (t.status !== 'done') return false; }
-    else if (whenFilter !== 'all')  { if (t.status === 'done' || b !== whenFilter) return false; }
-    else                            { /* all: всё */ }
+    if (whenFilter === 'done')      { if (!t.done) return false; }
+    else if (whenFilter !== 'all')  { if (t.done || b !== whenFilter) return false; }
     if (srcFilter !== 'all' && t.source !== srcFilter) return false;
     if (!q) return true;
-    const rel = t.related?.name || '';
-    const hay = `${t.title} ${t.desc} ${rel}`.toLowerCase();
+    const rel = relatedOf(t)?.name || '';
+    const hay = `${t.title||''} ${t.description||''} ${rel}`.toLowerCase();
     return hay.includes(q);
   });
 
-  // Сортировка: сперва просрочка, потом по дате возрастания, выполненные — в конец по completed_at desc
   filtered.sort((a,b) => {
-    if (a.status === 'done' && b.status !== 'done') return 1;
-    if (b.status === 'done' && a.status !== 'done') return -1;
-    if (a.status === 'done' && b.status === 'done') return new Date(b.completed_at||0) - new Date(a.completed_at||0);
-    return new Date(a.due) - new Date(b.due);
+    if (a.done && !b.done) return 1;
+    if (b.done && !a.done) return -1;
+    if (a.done && b.done)  return new Date(b.done_at||0) - new Date(a.done_at||0);
+    return new Date(a.due_at||0) - new Date(b.due_at||0);
   });
 
   if (filtered.length === 0) {
@@ -256,26 +242,27 @@ function renderTasks() {
   empty.style.display = 'none';
 
   list.innerHTML = filtered.map(t => {
-    const src = SRC_MAP[t.source];
-    const tp  = TYPE_MAP[t.type] || TYPE_MAP.general;
-    const pri = PRI_MAP[t.priority] || PRI_MAP.medium;
+    const src = SRC_MAP[t.source] || SRC_MAP.self;
+    const tp  = TYPE_MAP[t.type]   || TYPE_MAP.other;
+    const pri = PRI_MAP[t.priority]|| PRI_MAP.mid;
     const dueCls = dueBadgeClass(t);
     const dueTx  = dueBadgeText(t);
-    const relTx  = t.related ? `<span class="task-link">${t.related.kind==='lead'?'🎯':'📇'} ${t.related.name}</span>` : '';
+    const rel    = relatedOf(t);
+    const relTx  = rel ? `<span class="task-link">${rel.kind==='lead'?'🎯':'📇'} ${esc(rel.name)}</span>` : '';
     return `
-      <div class="ti lead-ti ${t.status==='done'?'task-done':''}" onclick="openTaskModal(${t.id})">
+      <div class="ti lead-ti ${t.done?'task-done':''}" onclick="openTaskModal('${t.id}')">
         <div class="pri-dot ${pri.cls}" title="Приоритет: ${pri.label}"></div>
         <div class="ti-b">
-          <div class="ti-t">${tp.icon} ${t.title}</div>
+          <div class="ti-t">${tp.icon} ${esc(t.title)}</div>
           <div class="task-meta">
             <span class="task-due ${dueCls}">${dueTx}</span>
             <span class="task-src ${t.source}">${src.icon} ${src.label}</span>
             ${relTx}
           </div>
         </div>
-        ${t.status==='done'
+        ${t.done
           ? '<div class="tg tg3">✓ Готово</div>'
-          : `<button class="mbtn mbtn-g" style="flex:none;padding:7px 11px;font-size:11px" onclick="event.stopPropagation();markDone(${t.id})">✓ Готово</button>`
+          : `<button class="mbtn mbtn-g" style="flex:none;padding:7px 11px;font-size:11px" onclick="event.stopPropagation();markDone('${t.id}')">✓ Готово</button>`
         }
       </div>`;
   }).join('');
@@ -304,23 +291,24 @@ document.getElementById('t-search').addEventListener('input', e => { tSearch = e
 function openTaskModal(id) {
   const t = TASKS.find(x => x.id === id);
   if (!t) return;
-  const src = SRC_MAP[t.source];
-  const tp  = TYPE_MAP[t.type] || TYPE_MAP.general;
-  const pri = PRI_MAP[t.priority] || PRI_MAP.medium;
+  const src = SRC_MAP[t.source] || SRC_MAP.self;
+  const tp  = TYPE_MAP[t.type]   || TYPE_MAP.other;
+  const pri = PRI_MAP[t.priority]|| PRI_MAP.mid;
   const dueCls = dueBadgeClass(t);
   const dueTx  = dueBadgeText(t);
+  const rel    = relatedOf(t);
   const body = document.getElementById('t-modal-body');
-  const relRow = t.related
-    ? `<div class="mg-row"><span class="mg-k">🔗 Связано с</span><a class="mg-v" href="${t.related.kind==='lead'?'leads.html':'contacts.html'}">${t.related.kind==='lead'?'🎯':'📇'} ${t.related.name}</a></div>`
+  const relRow = rel
+    ? `<div class="mg-row"><span class="mg-k">🔗 Связано с</span><a class="mg-v" href="${rel.kind==='lead'?'leads.html':'contacts.html'}">${rel.kind==='lead'?'🎯':'📇'} ${esc(rel.name)}</a></div>`
     : '';
-  const completedRow = t.status==='done'
-    ? `<div class="mg-row"><span class="mg-k">✓ Выполнено</span><span class="mg-v">${t.completed_at ? fmtShort(t.completed_at) : '—'}</span></div>`
+  const completedRow = t.done
+    ? `<div class="mg-row"><span class="mg-k">✓ Выполнено</span><span class="mg-v">${t.done_at ? fmtShort(t.done_at) : '—'}</span></div>`
     : '';
   body.innerHTML = `
     <div class="modal-head">
       <div class="la lead-ava">${tp.icon}</div>
       <div>
-        <div class="modal-ttl">${t.title}</div>
+        <div class="modal-ttl">${esc(t.title)}</div>
         <div class="modal-sub">${tp.label} · приоритет: ${pri.label} · источник: ${src.icon} ${src.label}</div>
       </div>
       <div class="task-due ${dueCls}" style="margin-left:auto">${dueTx}</div>
@@ -328,30 +316,30 @@ function openTaskModal(id) {
     <div class="modal-grid">
       <div class="mg-row" style="display:block">
         <div class="mg-k" style="margin-bottom:6px">📝 Описание</div>
-        <div class="mg-v" style="text-align:left;font-weight:500;line-height:1.45">${t.desc || '—'}</div>
+        <div class="mg-v" style="text-align:left;font-weight:500;line-height:1.45">${esc(t.description || '—')}</div>
       </div>
       ${relRow}
-      <div class="mg-row"><span class="mg-k">🕐 Срок</span><span class="mg-v">${t.due ? fmtShort(t.due) : 'без срока'}</span></div>
+      <div class="mg-row"><span class="mg-k">🕐 Срок</span><span class="mg-v">${t.due_at ? fmtShort(t.due_at) : 'без срока'}</span></div>
       ${completedRow}
     </div>
-    ${t.status === 'done' ? `
+    ${t.done ? `
       <div class="modal-actions">
-        <button class="mbtn mbtn-p" onclick="reopenTask(${t.id})">↩️ Вернуть в работу</button>
-        <button class="mbtn mbtn-r" onclick="deleteTask(${t.id})">🗑 Удалить</button>
+        <button class="mbtn mbtn-p" onclick="reopenTask('${t.id}')">↩️ Вернуть в работу</button>
+        <button class="mbtn mbtn-r" onclick="deleteTask('${t.id}')">🗑 Удалить</button>
       </div>
     ` : `
       <div class="modal-actions">
-        <button class="mbtn mbtn-g" onclick="markDone(${t.id})">✅ Выполнено</button>
-        <button class="mbtn mbtn-p" onclick="editTask(${t.id})">✏️ Редактировать</button>
-        <button class="mbtn mbtn-r" onclick="deleteTask(${t.id})">🗑 Удалить</button>
+        <button class="mbtn mbtn-g" onclick="markDone('${t.id}')">✅ Выполнено</button>
+        <button class="mbtn mbtn-p" onclick="editTask('${t.id}')">✏️ Редактировать</button>
+        <button class="mbtn mbtn-r" onclick="deleteTask('${t.id}')">🗑 Удалить</button>
       </div>
       <div class="qa-row">
         <span style="font-size:11px;color:var(--td);align-self:center;margin-right:4px">🕐 Отложить:</span>
-        <button class="mbtn" onclick="snooze(${t.id},'1h')">+1ч</button>
-        <button class="mbtn" onclick="snooze(${t.id},'3h')">+3ч</button>
-        <button class="mbtn" onclick="snooze(${t.id},'tomorrow')">На завтра</button>
-        <button class="mbtn" onclick="snooze(${t.id},'+1d')">+1 день</button>
-        <button class="mbtn" onclick="snooze(${t.id},'+1w')">+1 неделя</button>
+        <button class="mbtn" onclick="snooze('${t.id}','1h')">+1ч</button>
+        <button class="mbtn" onclick="snooze('${t.id}','3h')">+3ч</button>
+        <button class="mbtn" onclick="snooze('${t.id}','tomorrow')">На завтра</button>
+        <button class="mbtn" onclick="snooze('${t.id}','+1d')">+1 день</button>
+        <button class="mbtn" onclick="snooze('${t.id}','+1w')">+1 неделя</button>
       </div>
     `}
   `;
@@ -368,21 +356,30 @@ function showToast(msg) {
   clearTimeout(showToast._tid);
   showToast._tid = setTimeout(() => el.classList.remove('show'), 2800);
 }
-function markDone(id) {
+async function patchTask(id, patch, optimistic) {
   const t = TASKS.find(x => x.id === id);
   if (!t) return;
-  t.status = 'done';
-  t.completed_at = new Date().toISOString();
+  const prev = { ...t };
+  Object.assign(t, optimistic || patch);
   closeTaskModal();
   renderTasks(); updateStats();
-  showToast(`✅ Задача выполнена: ${t.title}`);
+  try {
+    await sb('PATCH', `tasks?id=eq.${id}`, { ...patch, updated_at: new Date().toISOString() });
+  } catch (e) {
+    console.error('patchTask:', e);
+    Object.assign(t, prev);
+    renderTasks(); updateStats();
+    showToast('❌ Не удалось сохранить: ' + e.message);
+  }
+}
+function markDone(id) {
+  const now = new Date().toISOString();
+  patchTask(id, { done:true, done_at:now }, { done:true, done_at:now });
+  const t = TASKS.find(x => x.id === id);
+  if (t) showToast(`✅ Задача выполнена: ${t.title}`);
 }
 function reopenTask(id) {
-  const t = TASKS.find(x => x.id === id);
-  if (!t) return;
-  t.status = 'pending';
-  delete t.completed_at;
-  renderTasks(); updateStats();
+  patchTask(id, { done:false, done_at:null }, { done:false, done_at:null });
   openTaskModal(id);
   showToast(`↩️ Задача возвращена в работу`);
 }
@@ -390,34 +387,57 @@ function snooze(id, mode) {
   const t = TASKS.find(x => x.id === id);
   if (!t) return;
   const now = new Date();
-  let d = t.due ? new Date(t.due) : now;
-  // Если уже просрочено — отсчёт от сейчас, иначе от текущего срока
+  let d = t.due_at ? new Date(t.due_at) : now;
   if (d < now) d = now;
   if      (mode === '1h')       d.setHours(d.getHours()+1);
   else if (mode === '3h')       d.setHours(d.getHours()+3);
   else if (mode === 'tomorrow') { d = new Date(TODAY); d.setDate(d.getDate()+1); d.setHours(9,0,0,0); }
   else if (mode === '+1d')      d.setDate(d.getDate()+1);
   else if (mode === '+1w')      d.setDate(d.getDate()+7);
-  t.due = d.toISOString();
-  renderTasks(); updateStats();
+  const iso = d.toISOString();
+  patchTask(id, { due_at: iso }, { due_at: iso });
   openTaskModal(id);
-  showToast(`🕐 Отложено до ${fmtShort(t.due)}`);
+  showToast(`🕐 Отложено до ${fmtShort(iso)}`);
 }
-function deleteTask(id) {
+async function deleteTask(id) {
   const t = TASKS.find(x => x.id === id);
   if (!t) return;
   if (!confirm(`Удалить задачу "${t.title}"?`)) return;
   const idx = TASKS.findIndex(x => x.id === id);
-  TASKS.splice(idx, 1);
+  const removed = TASKS.splice(idx, 1)[0];
   closeTaskModal();
   renderTasks(); updateStats();
-  showToast('🗑 Задача удалена');
+  try {
+    await sb('DELETE', `tasks?id=eq.${id}`);
+    showToast('🗑 Задача удалена');
+  } catch (e) {
+    console.error('deleteTask:', e);
+    TASKS.splice(idx, 0, removed);
+    renderTasks(); updateStats();
+    showToast('❌ Не удалось удалить: ' + e.message);
+  }
 }
 function editTask(id) { showToast('✏️ Форма редактирования появится в следующей итерации.'); }
-function openAddTask()  { showToast('➕ Форма добавления задачи появится после миграции таблицы ai_jobs.'); }
+function openAddTask() { showToast('➕ Форма добавления задачи появится в следующей итерации.'); }
 
-updateStats();
-renderTasks();
+async function loadTasks() {
+  const list = document.getElementById('t-list');
+  try {
+    currentPartner = await getCurrentPartner();
+    if (!currentPartner) {
+      list.innerHTML = '<div class="leads-empty"><p>Партнёр не найден. Обратитесь к администратору.</p></div>';
+      return;
+    }
+    const sel = 'select=*,lead:leads(id,name,last_name),contact:contacts(id,name)';
+    TASKS = await sb('GET', `tasks?partner_id=eq.${currentPartner.id}&${sel}&order=due_at.asc.nullslast`);
+    updateStats(); renderTasks();
+  } catch (e) {
+    console.error('loadTasks:', e);
+    list.innerHTML = `<div class="leads-empty"><p>Ошибка загрузки: ${esc(e.message)}</p></div>`;
+  }
+}
+
+loadTasks();
 </script>
 </body>
 </html>

@@ -11,64 +11,200 @@
 
 <main class="main">
   <div class="welcome">
-    <div><h2>Добро пожаловать на борт, Капитан</h2><p>Курс стабилен. 3 новых заявки ожидают обработки.</p></div>
+    <div>
+      <h2 id="welcome-ttl">Добро пожаловать, Капитан</h2>
+      <p id="welcome-sub">Загружаем сводку…</p>
+    </div>
     <div class="welcome-r"><div class="wdate" id="today-date"></div></div>
   </div>
 
   <div class="stats">
-    <div class="sc"><div class="sc-top"><div class="sc-icon si1">🎯</div><div class="sc-trend tu">+12%</div></div><div class="sc-val">47</div><div class="sc-lbl">Заявок за месяц</div></div>
-    <div class="sc"><div class="sc-top"><div class="sc-icon si2">👥</div><div class="sc-trend tu">+3</div></div><div class="sc-val">128</div><div class="sc-lbl">Контактов всего</div></div>
-    <div class="sc"><div class="sc-top"><div class="sc-icon si3">🤖</div><div class="sc-trend tu">84%</div></div><div class="sc-val">31</div><div class="sc-lbl">AI-касаний сегодня</div></div>
-    <div class="sc"><div class="sc-top"><div class="sc-icon si4">✅</div><div class="sc-trend tw">5 осталось</div></div><div class="sc-val">8</div><div class="sc-lbl">Задач на сегодня</div></div>
+    <div class="sc"><div class="sc-top"><div class="sc-icon si1">🎯</div><div class="sc-trend tu" id="st-leads-trend">—</div></div><div class="sc-val" id="st-leads">0</div><div class="sc-lbl">Заявок за месяц</div></div>
+    <div class="sc"><div class="sc-top"><div class="sc-icon si2">👥</div><div class="sc-trend tu" id="st-contacts-trend">—</div></div><div class="sc-val" id="st-contacts">0</div><div class="sc-lbl">Контактов всего</div></div>
+    <div class="sc"><div class="sc-top"><div class="sc-icon si3">🤖</div><div class="sc-trend tu" id="st-ai-trend">—</div></div><div class="sc-val" id="st-ai">0</div><div class="sc-lbl">AI-касаний сегодня</div></div>
+    <div class="sc"><div class="sc-top"><div class="sc-icon si4">✅</div><div class="sc-trend tw" id="st-tasks-trend">—</div></div><div class="sc-val" id="st-tasks">0</div><div class="sc-lbl">Задач на сегодня</div></div>
   </div>
 
   <div class="cgrid">
     <div>
       <div class="pnl">
-        <div class="pnl-h"><div class="pnl-t">📊 Активность команды</div><div class="pnl-tabs"><button class="pt active">Неделя</button><button class="pt">Месяц</button><button class="pt">Год</button></div></div>
-        <div class="chart">
-          <div class="bg"><div class="br br1" style="height:55px"></div><div class="br br2" style="height:28px"></div><div class="bl">Пн</div></div>
-          <div class="bg"><div class="br br1" style="height:85px"></div><div class="br br2" style="height:45px"></div><div class="bl">Вт</div></div>
-          <div class="bg"><div class="br br1" style="height:70px"></div><div class="br br2" style="height:38px"></div><div class="bl">Ср</div></div>
-          <div class="bg"><div class="br br1" style="height:110px"></div><div class="br br2" style="height:60px"></div><div class="bl">Чт</div></div>
-          <div class="bg"><div class="br br1" style="height:140px"></div><div class="br br2" style="height:75px"></div><div class="bl">Пт</div></div>
-          <div class="bg"><div class="br br1" style="height:95px"></div><div class="br br2" style="height:50px"></div><div class="bl">Сб</div></div>
-          <div class="bg"><div class="br br1" style="height:40px"></div><div class="br br2" style="height:18px"></div><div class="bl">Вс</div></div>
-        </div>
+        <div class="pnl-h"><div class="pnl-t">📊 Заявки за 7 дней</div><div class="pnl-tabs"><button class="pt active">Неделя</button></div></div>
+        <div class="chart" id="d-chart"></div>
       </div>
       <div class="pnl">
-        <div class="pnl-h"><div class="pnl-t">📋 Задачи на сегодня</div><div class="pnl-tabs"><button class="pt active">Активные</button><button class="pt">Все</button></div></div>
-        <div class="tl">
-          <div class="ti"><div class="tdot da"></div><div class="ti-b"><div class="ti-t">Обработать 3 новых заявки</div><div class="ti-m">Приоритет: высокий · Дедлайн: сегодня</div></div><div class="tg tg1">Новое</div></div>
-          <div class="ti"><div class="tdot ds"></div><div class="ti-b"><div class="ti-t">AI завершил квалификацию — проверить</div><div class="ti-m">5 заявок · Рекомендации готовы</div></div><div class="tg tg2">AI</div></div>
-          <div class="ti"><div class="tdot dg"></div><div class="ti-b"><div class="ti-t">Follow-up с Маратом К.</div><div class="ti-m">Контакт · Касание #3</div></div><div class="tg tg3">В работе</div></div>
-          <div class="ti"><div class="tdot dc"></div><div class="ti-b"><div class="ti-t">Презентация для Алии — 16:00</div><div class="ti-m">Запланировано · Онлайн</div></div><div class="tg tg1">Важно</div></div>
+        <div class="pnl-h">
+          <div class="pnl-t">📋 Задачи на сегодня</div>
+          <div class="pnl-tabs"><a href="tasks.html" class="pt">Все задачи →</a></div>
         </div>
+        <div class="tl" id="d-tasks"></div>
       </div>
     </div>
     <div>
       <div class="pnl">
         <div class="pnl-h"><div class="pnl-t">🏆 Лидерборд команды</div></div>
-        <div class="ll">
-          <div class="li"><div class="lr g">1</div><div class="la" style="background:linear-gradient(135deg,#FFB703,#FB8500)">АС</div><div class="li-i"><div class="li-n">Алия С.</div><div class="li-s">12 заявок · 4 конверсии</div></div><div class="li-p">340</div></div>
-          <div class="li"><div class="lr s">2</div><div class="la" style="background:linear-gradient(135deg,#0077B6,#00B4D8)">МК</div><div class="li-i"><div class="li-n">Марат К.</div><div class="li-s">9 заявок · 3 конверсии</div></div><div class="li-p">285</div></div>
-          <div class="li"><div class="lr b">3</div><div class="la" style="background:linear-gradient(135deg,#06D6A0,#00B4D8)">ДТ</div><div class="li-i"><div class="li-n">Дана Т.</div><div class="li-s">7 заявок · 2 конверсии</div></div><div class="li-p">210</div></div>
-          <div class="li"><div class="lr">4</div><div class="la" style="background:linear-gradient(135deg,#5A7B95,#3A5570)">НБ</div><div class="li-i"><div class="li-n">Нурлан Б.</div><div class="li-s">5 заявок · 1 конверсия</div></div><div class="li-p">145</div></div>
-          <div class="li"><div class="lr">5</div><div class="la" style="background:linear-gradient(135deg,#5A7B95,#3A5570)">ЕМ</div><div class="li-i"><div class="li-n">Елена М.</div><div class="li-s">3 заявки · 1 конверсия</div></div><div class="li-p">98</div></div>
-        </div>
+        <div class="ll" id="d-leaderboard"></div>
         <div class="compass">
           <div class="compass-i">🧭</div>
-          <div><h4>Курс на Gold</h4><p>До ранга: 3/5 партнёров. Глубина: 2/3.</p></div>
+          <div><h4 id="d-rank-ttl">Ваш ранг</h4><p id="d-rank-sub">Загружается…</p></div>
         </div>
       </div>
     </div>
   </div>
 </main>
 
+<script src="assets/js/api.js"></script>
 <script src="assets/js/dashboard.js"></script>
 <script>
-  initDashboard('dashboard');
-  document.getElementById('today-date').textContent = new Date().toLocaleDateString('ru-RU',{weekday:'short',day:'numeric',month:'long',year:'numeric'});
+initDashboard('dashboard');
+requireAuth();
+
+document.getElementById('today-date').textContent =
+  new Date().toLocaleDateString('ru-RU', { weekday:'short', day:'numeric', month:'long', year:'numeric' });
+
+function esc(s) {
+  return String(s ?? '').replace(/[&<>"']/g, c => (
+    { '&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;' }[c]
+  ));
+}
+function initials(name) {
+  return String(name || '?').trim().split(/\s+/).slice(0,2).map(s => s[0]).join('').toUpperCase();
+}
+function startOfToday() { const d = new Date(); d.setHours(0,0,0,0); return d; }
+function endOfToday()   { const d = new Date(); d.setHours(23,59,59,999); return d; }
+function startOfMonth() { const d = new Date(); d.setDate(1); d.setHours(0,0,0,0); return d; }
+function daysAgo(n)     { const d = new Date(); d.setDate(d.getDate() - n); d.setHours(0,0,0,0); return d; }
+function fmtTime(iso) {
+  if (!iso) return '—';
+  return new Date(iso).toLocaleTimeString('ru-RU', { hour:'2-digit', minute:'2-digit' });
+}
+
+const PRIORITY_TAG = {
+  high: { cls:'tg1', label:'Важно' },
+  mid:  { cls:'tg2', label:'Средне' },
+  low:  { cls:'tg3', label:'Низкий' },
+};
+const TASK_TYPE = {
+  call:     '📞', message: '💬', followup: '🔁',
+  meeting:  '🗓', reminder:'🔔', other:   '📝',
+};
+
+async function loadDashboard() {
+  let me;
+  try {
+    me = await getCurrentPartner();
+  } catch (e) {
+    console.error('partner:', e);
+  }
+  if (!me) {
+    document.getElementById('welcome-sub').textContent = 'Партнёр не найден.';
+    return;
+  }
+
+  const firstName = (me.name || 'Капитан').split(/\s+/)[0];
+  document.getElementById('welcome-ttl').textContent = `Добро пожаловать, ${firstName}`;
+
+  const [leadsAll, newLeads, contacts, todayTasks, aiEvents, topPartners] = await Promise.all([
+    sb('GET', `leads?created_at=gte.${startOfMonth().toISOString()}&select=id,status,created_at`).catch(() => []),
+    sb('GET', `leads?status=eq.new&select=id`).catch(() => []),
+    sb('GET', `contacts?select=id`).catch(() => []),
+    sb('GET', `tasks?done=eq.false&due_at=lte.${endOfToday().toISOString()}&select=id,title,description,type,priority,due_at,done&order=due_at.asc.nullslast,priority.asc`).catch(() => []),
+    sb('GET', `events_log?actor=eq.ai&created_at=gte.${startOfToday().toISOString()}&select=id`).catch(() => []),
+    sb('GET', `partners?select=id,name,ref_code,rank,group_volume,personal_volume&order=group_volume.desc&limit=5`).catch(() => []),
+  ]);
+
+  const leads7d = leadsAll.filter(l => new Date(l.created_at) >= daysAgo(7));
+
+  document.getElementById('st-leads').textContent = leadsAll.length;
+  document.getElementById('st-leads-trend').textContent = leads7d.length ? `+${leads7d.length}` : '0';
+  document.getElementById('st-contacts').textContent = contacts.length;
+  document.getElementById('st-contacts-trend').textContent = '';
+  document.getElementById('st-ai').textContent = aiEvents.length;
+  document.getElementById('st-ai-trend').textContent = aiEvents.length ? 'сегодня' : '—';
+  document.getElementById('st-tasks').textContent = todayTasks.length;
+  document.getElementById('st-tasks-trend').textContent = todayTasks.length ? `${todayTasks.length} активно` : 'пусто';
+
+  const newCount = newLeads.length;
+  document.getElementById('welcome-sub').textContent = newCount
+    ? `Курс стабилен. ${newCount} ${newCount === 1 ? 'новая заявка ждёт' : 'новых заявок ждут'} обработки.`
+    : 'Курс стабилен. Новых заявок нет.';
+
+  renderChart(leads7d);
+  renderTasks(todayTasks);
+  renderLeaderboard(topPartners, me.id);
+  renderRank(me);
+}
+
+function renderChart(leads) {
+  const chart = document.getElementById('d-chart');
+  const labels = ['Пн','Вт','Ср','Чт','Пт','Сб','Вс'];
+  const buckets = [0,0,0,0,0,0,0];
+  const base = daysAgo(6);
+  for (const l of leads) {
+    const d = new Date(l.created_at);
+    const diff = Math.floor((d - base) / 86400000);
+    if (diff >= 0 && diff < 7) buckets[diff]++;
+  }
+  const max = Math.max(...buckets, 1);
+  const today = new Date();
+  chart.innerHTML = buckets.map((v, i) => {
+    const day = new Date(base); day.setDate(base.getDate() + i);
+    const label = labels[(day.getDay() + 6) % 7];
+    const h = Math.round((v / max) * 150) + 4;
+    return `<div class="bg"><div class="br br1" style="height:${h}px" title="${v} заявок"></div><div class="bl">${label}</div></div>`;
+  }).join('');
+}
+
+function renderTasks(tasks) {
+  const el = document.getElementById('d-tasks');
+  if (!tasks.length) {
+    el.innerHTML = '<div class="leads-empty"><div class="stub-icon">🎯</div><p>На сегодня задач нет — отличный момент, чтобы разобрать входящие.</p></div>';
+    return;
+  }
+  el.innerHTML = tasks.slice(0, 6).map(t => {
+    const prio = PRIORITY_TAG[t.priority] || PRIORITY_TAG.mid;
+    const dot = t.priority === 'high' ? 'da' : t.priority === 'low' ? 'dg' : 'ds';
+    const icon = TASK_TYPE[t.type] || '📝';
+    const meta = [t.due_at ? `Срок: ${fmtTime(t.due_at)}` : null, t.description].filter(Boolean).join(' · ');
+    return `
+      <div class="ti">
+        <div class="tdot ${dot}"></div>
+        <div class="ti-b">
+          <div class="ti-t">${icon} ${esc(t.title)}</div>
+          <div class="ti-m">${esc(meta || '—')}</div>
+        </div>
+        <div class="tg ${prio.cls}">${prio.label}</div>
+      </div>`;
+  }).join('');
+}
+
+function renderLeaderboard(partners, meId) {
+  const el = document.getElementById('d-leaderboard');
+  if (!partners.length) {
+    el.innerHTML = '<div class="leads-empty"><p>Команда пока пуста.</p></div>';
+    return;
+  }
+  const palette = ['#FFB703,#FB8500', '#0077B6,#00B4D8', '#06D6A0,#00B4D8', '#5A7B95,#3A5570', '#5A7B95,#3A5570'];
+  const rankCls = ['g','s','b','',''];
+  el.innerHTML = partners.map((p, i) => `
+    <div class="li${p.id === meId ? ' li-me' : ''}">
+      <div class="lr ${rankCls[i] || ''}">${i+1}</div>
+      <div class="la" style="background:linear-gradient(135deg,${palette[i] || '#5A7B95,#3A5570'})">${esc(initials(p.name))}</div>
+      <div class="li-i">
+        <div class="li-n">${esc(p.name || '—')}${p.id === meId ? ' <span style="color:var(--azure);font-size:10px">ВЫ</span>' : ''}</div>
+        <div class="li-s">${esc(p.ref_code || '—')} · ${p.rank || 'нет ранга'}</div>
+      </div>
+      <div class="li-p">${Math.round(p.group_volume || 0)}</div>
+    </div>`).join('');
+}
+
+function renderRank(me) {
+  document.getElementById('d-rank-ttl').textContent = me.rank ? `Ранг: ${me.rank}` : 'Ранг: —';
+  const pv = Math.round(me.personal_volume || 0);
+  const gv = Math.round(me.group_volume || 0);
+  document.getElementById('d-rank-sub').textContent = `PV: $${pv} · GV: $${gv}`;
+}
+
+loadDashboard();
 </script>
 </body>
 </html>

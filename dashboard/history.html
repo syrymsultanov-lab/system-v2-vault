@@ -137,11 +137,22 @@
   </div>
 </div>
 
+<script src="assets/js/api.js"></script>
 <script src="assets/js/dashboard.js"></script>
 <script>
 initDashboard('history');
+requireAuth();
 
-const TODAY = new Date('2026-04-18T18:30:00');
+const TODAY = new Date(); TODAY.setHours(23,59,59,999);
+
+let EVENTS = [];
+let currentPartner = null;
+
+function esc(s) {
+  return String(s ?? '').replace(/[&<>"']/g, c => (
+    { '&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;' }[c]
+  ));
+}
 
 // ===== Maps =====
 const TYPE_MAP = {
@@ -170,47 +181,24 @@ const ACTOR_MAP = {
   ai:      { label:'AI',      icon:'🤖' },
   system:  { label:'Система', icon:'⚙️' },
   partner: { label:'Партнёр', icon:'🌊' },
+  lead:    { label:'Лид',     icon:'🎯' },
+  anon:    { label:'Гость',   icon:'👁' },
 };
 
-// ===== MOCK EVENTS — отсортированы desc по дате =====
-const EVENTS = [
-  // Сегодня (2026-04-18)
-  { id:101, ts:'2026-04-18T18:14:00', type:'auth.login',          actor:'me',      title:'Вход в систему', desc:'Сырым вошёл в кабинет с устройства Windows 10', meta:{ ip:'95.59.x.x', device:'Chrome 142 / Windows', location:'Алматы, KZ' } },
-  { id:102, ts:'2026-04-18T16:52:00', type:'ai.draft_created',    actor:'ai',      title:'AI подготовил черновик для <b>Нурлана Баймухамбетова</b>', desc:'Первое сообщение в Instagram, шаблон «warm_intro_v2». Ожидает одобрения партнёра.', meta:{ lead_id:4, template:'warm_intro_v2', length:'214 симв.' } },
-  { id:103, ts:'2026-04-18T15:30:00', type:'task.completed',      actor:'me',      title:'Задача выполнена: «Связаться с <b>Тимуром Ахметовым</b>»', desc:'Звонок 20 минут, договорились о созвоне 22-го для презентации.', meta:{ task_id:10, duration:'20 мин' } },
-  { id:104, ts:'2026-04-18T14:08:00', type:'lead.qualified',      actor:'me',      title:'Лид квалифицирован: <b>Дана Турсынова</b>', desc:'Бюджет $200/мес, целевой круиз — Карибы. Готова к презентации.', meta:{ lead_id:3, status_from:'contacted', status_to:'qualified' } },
-  { id:105, ts:'2026-04-18T13:22:00', type:'message.sent',        actor:'me',      title:'Сообщение в WhatsApp: <b>Алия Сатпаева</b>', desc:'«Здравствуйте, Алия! Видела вашу заявку, давайте созвонимся в удобное время...»', meta:{ lead_id:1, channel:'whatsapp' } },
-  { id:106, ts:'2026-04-18T13:00:00', type:'task.created',        actor:'ai',      title:'AI создал задачу: «Перезвонить <b>Алие Сатпаевой</b>»', desc:'Высокий приоритет — лид только что оставил заявку, важен первый час.', meta:{ task_id:1, priority:'high' } },
-  { id:107, ts:'2026-04-18T09:14:00', type:'lead.created',        actor:'system',  title:'Новая заявка с лендинга: <b>Алия Сатпаева</b>', desc:'Реф-код TEST001 (Сайра), Алматы, мессенджер WhatsApp.', meta:{ lead_id:1, ref:'TEST001', source:'landing' } },
-  { id:108, ts:'2026-04-18T07:50:00', type:'lead.created',        actor:'system',  title:'Новая заявка с лендинга: <b>Асель Жумабекова</b>', desc:'Реф-код TEST001 (Сайра), Алматы, мессенджер WhatsApp.', meta:{ lead_id:7, ref:'TEST001', source:'landing' } },
-
-  // Вчера (2026-04-17)
-  { id:201, ts:'2026-04-17T20:11:00', type:'partner.joined',      actor:'system',  title:'Новый партнёр в команде: <b>Аружан Темирова</b>', desc:'Зарегистрировалась через реф-код TEST001. Линия 1, Караганда.', meta:{ partner_id:6, ref:'AT-NEW', upline:'TEST001' } },
-  { id:202, ts:'2026-04-17T18:02:00', type:'lead.created',        actor:'system',  title:'Новая заявка с лендинга: <b>Марат Кенжебаев</b>', desc:'Астана, мессенджер Telegram, имя сохранено как @marat_k.', meta:{ lead_id:2, ref:'TEST001', source:'landing' } },
-  { id:203, ts:'2026-04-17T16:45:00', type:'ai.message_approved', actor:'me',      title:'AI-черновик одобрен и отправлен <b>Жулдыз Сериккызы</b>', desc:'Партнёр отредактировал 2 предложения, добавил эмодзи, отправил.', meta:{ lead_id:null, partner_action:true } },
-  { id:204, ts:'2026-04-17T14:20:00', type:'contact.invited',     actor:'me',      title:'Приглашение отправлено контакту <b>Мария Петрова</b>', desc:'Скопирована реф-ссылка sairateam.com/?ref=TEST001 в буфер.', meta:{ contact_id:3, channel:'telegram' } },
-  { id:205, ts:'2026-04-17T12:40:00', type:'lead.created',        actor:'system',  title:'Новая заявка с лендинга: <b>Дана Турсынова</b>', desc:'Шымкент, мессенджер WhatsApp, готова к диалогу.', meta:{ lead_id:3, ref:'TEST001', source:'landing' } },
-
-  // 2 дня назад (2026-04-16)
-  { id:301, ts:'2026-04-16T21:18:00', type:'lead.created',        actor:'system',  title:'Новая заявка с лендинга: <b>Нурлан Баймухамбетов</b>', desc:'Караганда, мессенджер Instagram (@nurlan.b).', meta:{ lead_id:4, ref:'TEST001', source:'landing' } },
-  { id:302, ts:'2026-04-16T15:42:00', type:'task.completed',      actor:'me',      title:'Задача выполнена: «Связаться с <b>Тимуром</b>»', desc:'Первый контакт прошёл успешно, лид заинтересован.', meta:{ task_id:10 } },
-  { id:303, ts:'2026-04-16T14:22:00', type:'lead.qualified',      actor:'me',      title:'Лид квалифицирован: <b>Тимур Ахметов</b>', desc:'Готов к презентации, ждёт расчёт по бюджету.', meta:{ lead_id:8, status_from:'contacted', status_to:'qualified' } },
-  { id:304, ts:'2026-04-16T11:00:00', type:'contact.imported',    actor:'me',      title:'Импорт контактов: 12 строк из CSV', desc:'Файл contacts_old.csv, 10 уникальных + 2 дубля (пропущены).', meta:{ source:'csv', total:12, added:10, duplicates:2 } },
-
-  // 3 дня назад (2026-04-15)
-  { id:401, ts:'2026-04-15T11:20:00', type:'message.sent',        actor:'me',      title:'Welcome-pack отправлен <b>Елене Морозовой</b>', desc:'Конверсия закрыта, отправлены инструкции по аккаунту InCruises.', meta:{ lead_id:5, channel:'telegram' } },
-  { id:402, ts:'2026-04-15T10:55:00', type:'lead.converted',      actor:'me',      title:'🏆 Конверсия: <b>Елена Морозова</b>', desc:'Стала клиентом InCruises (план Elite). +1 к статистике, +DAB.', meta:{ lead_id:5, status_from:'qualified', status_to:'converted' } },
-
-  // 4 дня назад (2026-04-14)
-  { id:501, ts:'2026-04-14T16:33:00', type:'lead.rejected',       actor:'me',      title:'Лид отклонён: <b>Ержан Абдрахманов</b>', desc:'Не подошёл по бюджету / не заинтересован в круизах.', meta:{ lead_id:6, status_from:'contacted', status_to:'rejected' } },
-
-  // Неделю назад (2026-04-11)
-  { id:601, ts:'2026-04-11T09:00:00', type:'partner.rank_up',     actor:'system',  title:'Партнёр <b>Айдар Касенов</b> повысил ранг: MD → RD', desc:'Поздравьте! Команда выросла до 42 человек, объём 480 CV.', meta:{ partner_id:1, rank_from:'MD', rank_to:'RD' } },
-  { id:602, ts:'2026-04-11T08:30:00', type:'template.created',    actor:'me',      title:'Шаблон создан: «warm_intro_v2»', desc:'Тёплое первое сообщение для лидов из Instagram. Используется AI.', meta:{ template_name:'warm_intro_v2' } },
-
-  // 2 недели назад (2026-04-04)
-  { id:701, ts:'2026-04-04T14:00:00', type:'partner.joined',      actor:'system',  title:'Новый партнёр в команде: <b>Камила Орынбасар</b>', desc:'Линия 2 (под Айдаром Касеновым), Алматы.', meta:{ partner_id:9, upline:'AID2025' } },
-];
+function eventTitle(e) {
+  const t = TYPE_MAP[e.event] || { label: e.event };
+  const p = e.payload || {};
+  const name = p.name || p.lead_name || p.contact_name || p.partner_name;
+  if (name) return `${t.label}: <b>${esc(name)}</b>`;
+  return t.label;
+}
+function eventDesc(e) {
+  const p = e.payload || {};
+  if (p.note) return String(p.note);
+  if (!Object.keys(p).length) return '—';
+  return Object.entries(p).filter(([k]) => !['name','lead_name','contact_name','partner_name','note'].includes(k))
+    .map(([k,v]) => `${k}: ${v === null ? '—' : v}`).join(' · ') || '—';
+}
 
 let periodFilter = 'all';
 let catFilter = 'all';
@@ -257,8 +245,8 @@ function fmtFull(ts) {
 
 // ===== stats =====
 function updateStats() {
-  const today    = EVENTS.filter(e => inPeriod(e.ts, 'today')).length;
-  const week     = EVENTS.filter(e => inPeriod(e.ts, '7d')).length;
+  const today    = EVENTS.filter(e => inPeriod(e.created_at, 'today')).length;
+  const week     = EVENTS.filter(e => inPeriod(e.created_at, '7d')).length;
   const ai       = EVENTS.filter(e => e.actor === 'ai').length;
   const me       = EVENTS.filter(e => e.actor === 'me').length;
   document.getElementById('st-h-total').textContent = EVENTS.length;
@@ -278,16 +266,16 @@ function renderHistory() {
   const q = hSearch.toLowerCase().trim();
 
   let filtered = EVENTS.filter(e => {
-    if (!inPeriod(e.ts, periodFilter)) return false;
-    const t = TYPE_MAP[e.type];
+    if (!inPeriod(e.created_at, periodFilter)) return false;
+    const t = TYPE_MAP[e.event];
     if (catFilter !== 'all' && (!t || t.cat !== catFilter)) return false;
     if (actorFilter !== 'all' && e.actor !== actorFilter) return false;
     if (!q) return true;
-    const hay = `${e.title} ${e.desc}`.replace(/<[^>]+>/g,'').toLowerCase();
+    const hay = `${eventTitle(e)} ${eventDesc(e)}`.replace(/<[^>]+>/g,'').toLowerCase();
     return hay.includes(q);
   });
 
-  filtered.sort((a,b) => new Date(b.ts) - new Date(a.ts));
+  filtered.sort((a,b) => new Date(b.created_at) - new Date(a.created_at));
 
   if (filtered.length === 0) {
     list.innerHTML = '';
@@ -296,11 +284,10 @@ function renderHistory() {
   }
   empty.style.display = 'none';
 
-  // Группировка по дню
   const groups = {};
   filtered.forEach(e => {
-    const k = dayKey(e.ts);
-    if (!groups[k]) groups[k] = { label: dayLabel(e.ts), items:[] };
+    const k = dayKey(e.created_at);
+    if (!groups[k]) groups[k] = { label: dayLabel(e.created_at), items:[] };
     groups[k].items.push(e);
   });
 
@@ -314,16 +301,16 @@ function renderHistory() {
         <div class="h-day-line"></div>
       </div>`;
     html += g.items.map(e => {
-      const t = TYPE_MAP[e.type] || { icon:'📌', cls:'cmu', label:e.type };
-      const a = ACTOR_MAP[e.actor];
+      const t = TYPE_MAP[e.event] || { icon:'📌', cls:'cmu', label:e.event };
+      const a = ACTOR_MAP[e.actor] || { icon:'•', label: e.actor || 'system' };
       return `
-        <div class="ev" onclick="openEvModal(${e.id})">
-          <div class="ev-time">${fmtTime(e.ts)}</div>
+        <div class="ev" onclick="openEvModal('${e.id}')">
+          <div class="ev-time">${fmtTime(e.created_at)}</div>
           <div class="ev-icon ${t.cls}">${t.icon}</div>
           <div class="ev-b">
-            <div class="ev-t">${e.title}</div>
+            <div class="ev-t">${eventTitle(e)}</div>
             <div class="ev-m">
-              <span class="ev-actor ${e.actor}">${a.icon} ${a.label}</span>
+              <span class="ev-actor ${e.actor||''}">${a.icon} ${a.label}</span>
               <span>${t.label}</span>
             </div>
           </div>
@@ -356,10 +343,10 @@ document.getElementById('h-search').addEventListener('input', e => { hSearch = e
 function openEvModal(id) {
   const e = EVENTS.find(x => x.id === id);
   if (!e) return;
-  const t = TYPE_MAP[e.type] || { icon:'📌', cls:'cmu', label:e.type };
-  const a = ACTOR_MAP[e.actor];
-  const metaRows = e.meta ? Object.entries(e.meta).map(([k,v]) => `
-    <div class="mg-row"><span class="mg-k">${k}</span><span class="mg-v" style="font-family:'JetBrains Mono',monospace;font-size:12px">${v === null ? '—' : v}</span></div>
+  const t = TYPE_MAP[e.event] || { icon:'📌', cls:'cmu', label:e.event };
+  const a = ACTOR_MAP[e.actor] || { icon:'•', label: e.actor || 'system' };
+  const metaRows = e.payload ? Object.entries(e.payload).map(([k,v]) => `
+    <div class="mg-row"><span class="mg-k">${esc(k)}</span><span class="mg-v" style="font-family:'JetBrains Mono',monospace;font-size:12px">${v === null ? '—' : esc(typeof v === 'object' ? JSON.stringify(v) : v)}</span></div>
   `).join('') : '';
   const body = document.getElementById('h-modal-body');
   body.innerHTML = `
@@ -367,18 +354,18 @@ function openEvModal(id) {
       <div class="ev-icon ${t.cls}" style="width:44px;height:44px;border-radius:12px;font-size:18px">${t.icon}</div>
       <div>
         <div class="modal-ttl">${t.label}</div>
-        <div class="modal-sub">${fmtFull(e.ts)} · ID #${e.id}</div>
+        <div class="modal-sub">${fmtFull(e.created_at)} · ID ${e.id.slice(0,8)}</div>
       </div>
-      <div class="ev-actor ${e.actor}" style="margin-left:auto">${a.icon} ${a.label}</div>
+      <div class="ev-actor ${e.actor||''}" style="margin-left:auto">${a.icon} ${a.label}</div>
     </div>
     <div class="modal-grid">
       <div class="mg-row" style="display:block">
         <div class="mg-k" style="margin-bottom:6px">📝 Событие</div>
-        <div class="mg-v" style="text-align:left;font-weight:500;line-height:1.45">${e.title}</div>
+        <div class="mg-v" style="text-align:left;font-weight:500;line-height:1.45">${eventTitle(e)}</div>
       </div>
       <div class="mg-row" style="display:block">
         <div class="mg-k" style="margin-bottom:6px">📄 Описание</div>
-        <div class="mg-v" style="text-align:left;font-weight:500;line-height:1.45;color:var(--tm)">${e.desc || '—'}</div>
+        <div class="mg-v" style="text-align:left;font-weight:500;line-height:1.45;color:var(--tm)">${esc(eventDesc(e))}</div>
       </div>
       ${metaRows ? `
         <div class="mg-row" style="display:block">
@@ -396,8 +383,23 @@ function openEvModal(id) {
 function closeEvModal() { document.getElementById('h-modal').classList.remove('active'); }
 document.addEventListener('keydown', e => { if (e.key === 'Escape') closeEvModal(); });
 
-updateStats();
-renderHistory();
+async function loadHistory() {
+  const list = document.getElementById('h-list');
+  try {
+    currentPartner = await getCurrentPartner();
+    if (!currentPartner) {
+      list.innerHTML = '<div class="empty-history"><p>Партнёр не найден.</p></div>';
+      return;
+    }
+    EVENTS = await sb('GET', `events_log?actor_id=eq.${currentPartner.id}&select=*&order=created_at.desc&limit=500`);
+    updateStats(); renderHistory();
+  } catch (e) {
+    console.error('loadHistory:', e);
+    list.innerHTML = `<div class="empty-history"><p>Ошибка загрузки: ${esc(e.message)}</p></div>`;
+  }
+}
+
+loadHistory();
 </script>
 </body>
 </html>

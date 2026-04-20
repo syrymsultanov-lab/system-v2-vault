@@ -169,9 +169,24 @@
   </div>
 </div>
 
+<script src="assets/js/api.js"></script>
 <script src="assets/js/dashboard.js"></script>
 <script>
 initDashboard('templates');
+requireAuth();
+
+let TEMPLATES = [];
+let currentPartner = null;
+
+function esc(s) {
+  return String(s ?? '').replace(/[&<>"']/g, c => (
+    { '&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;' }[c]
+  ));
+}
+function fmtDate(iso) {
+  if (!iso) return '—';
+  return iso.slice(0,10).replace(/-/g,'.');
+}
 
 const CAT_MAP = {
   intro:        { label:'Знакомство',     icon:'👋' },
@@ -212,157 +227,7 @@ const SAMPLE_DATA = {
   time:        '19:00',
 };
 
-// ===== MOCK TEMPLATES =====
-const TEMPLATES = [
-  {
-    id:1, name:'warm_intro_v2', title:'Тёплое первое сообщение',
-    cat:'intro', channel:'whatsapp', author:'me', active:true, ai:true,
-    body:`Здравствуйте, {{name}}! 👋
-
-Спасибо, что оставили заявку на sairateam.com. Меня зовут {{my_name}}, я из команды InCruises. Видела, что вы из {{city}} — прекрасный город!
-
-Удобно созвониться 10–15 минут, чтобы я рассказала о клубе и ответила на вопросы? Можно сегодня вечером или завтра в первой половине дня.`,
-    vars:['name','my_name','city'],
-    uses:24, last_used:'2026-04-18'
-  },
-  {
-    id:2, name:'cold_intro_friend', title:'Холодный контакт — знакомому',
-    cat:'intro', channel:'telegram', author:'me', active:true, ai:true,
-    body:`Привет, {{name}}! Давно не общались 🙂
-
-Я тут запустила одно интересное направление — клуб путешественников InCruises. Вспомнила тебя, потому что знаю, как ты любишь {{city}} (или просто море ✈️). Хочу показать, как там всё устроено — это не про впаривание, скорее про возможность.
-
-Когда удобно будет 10 минут поговорить? Можно голосовое или коротко списком.`,
-    vars:['name','city'],
-    uses:18, last_used:'2026-04-17'
-  },
-  {
-    id:3, name:'followup_24h', title:'Follow-up через 24 часа',
-    cat:'followup', channel:'whatsapp', author:'ai', active:true, ai:true,
-    body:`{{name}}, добрый день!
-
-Вчера написала вам по поводу InCruises — возможно, было неудобно отвечать. Без давления, просто хочу убедиться, что вопрос ещё актуален.
-
-Если интересно — отвечу на любые вопросы. Если нет — тоже скажите, не буду беспокоить 🙂`,
-    vars:['name'],
-    uses:42, last_used:'2026-04-18'
-  },
-  {
-    id:4, name:'followup_3d_soft', title:'Мягкий follow-up через 3 дня',
-    cat:'followup', channel:'telegram', author:'ai', active:true, ai:true,
-    body:`{{name}}, добрый день! 🙂
-
-Понимаю, что неделя загруженная. Просто напоминаю про InCruises — если ещё интересно, могу скинуть короткое видео-обзор (3 минуты), без созвона. Так вам удобнее?`,
-    vars:['name'],
-    uses:15, last_used:'2026-04-15'
-  },
-  {
-    id:5, name:'qualified_present_invite', title:'Приглашение на презентацию',
-    cat:'qualified', channel:'whatsapp', author:'me', active:true, ai:false,
-    body:`{{name}}, отлично! 🎉
-
-Тогда давайте я покажу вам короткую презентацию (15 минут) — расскажу про планы Standard / Elite / Black и посчитаю под ваш бюджет.
-
-Когда удобно — {{date}} в {{time}} или предложите своё время? Подключение через Zoom, ссылку пришлю за час.`,
-    vars:['name','date','time'],
-    uses:11, last_used:'2026-04-16'
-  },
-  {
-    id:6, name:'objection_pyramid', title:'Возражение: «Это пирамида?»',
-    cat:'objection', channel:'any', author:'me', active:true, ai:false,
-    body:`Хороший и важный вопрос, {{name}}. Понимаю настороженность.
-
-InCruises — это членский клуб круизов (как Costco для путешествий), а не финансовая пирамида. Реальный продукт — скидки на круизы и бонусные баллы. Партнёрская программа — это как у любого reseller-бизнеса: есть продукт, есть комиссия за приведённого клиента.
-
-Я не обещаю вам гарантированный доход — это неправда у любой компании. Но могу показать структуру компенсации и ответить на любые ваши вопросы. Хотите?`,
-    vars:['name'],
-    uses:7, last_used:'2026-04-12'
-  },
-  {
-    id:7, name:'objection_money', title:'Возражение: «Дорого / нет денег»',
-    cat:'objection', channel:'any', author:'me', active:true, ai:false,
-    body:`{{name}}, я вас слышу. Деньги — всегда вопрос приоритетов.
-
-Минимальный план InCruises — это около цены одной чашки кофе в день. И первый круиз можно полностью оплатить накопленными баллами.
-
-Если сейчас совсем не время — это окей, отложим. Но если вопрос в том, чтобы понять, как это работает — я могу показать без обязательств.`,
-    vars:['name'],
-    uses:9, last_used:'2026-04-14'
-  },
-  {
-    id:8, name:'presentation_link', title:'Ссылка на презентацию (PDF)',
-    cat:'presentation', channel:'telegram', author:'me', active:true, ai:false,
-    body:`{{name}}, вот короткая презентация InCruises (PDF, 12 страниц):
-
-📎 [презентация-incruises.pdf]
-
-Внутри: как устроен клуб, 3 плана, примеры круизов и компенсация. Посмотрите в свободные 10 минут — потом созвонимся и обсудим, что подходит именно вам.`,
-    vars:['name'],
-    uses:6, last_used:'2026-04-15'
-  },
-  {
-    id:9, name:'closing_welcome', title:'Welcome-pack новому члену',
-    cat:'closing', channel:'email', author:'me', active:true, ai:false,
-    body:`Поздравляю, {{name}}! 🎉
-
-Вы официально в клубе InCruises. Вот что нужно сделать в первую очередь:
-
-1. Подтвердите аккаунт по ссылке из письма от InCruises
-2. Зайдите в Member Portal: my.incruises.com
-3. Сохраните мой контакт — я ваш персональный куратор
-4. Жду от вас первый запрос на круиз — помогу с подбором
-
-Если будут вопросы — пишите в любое время. Добро пожаловать на борт! ⚓`,
-    vars:['name'],
-    uses:4, last_used:'2026-04-15'
-  },
-  {
-    id:10, name:'reminder_call', title:'Напоминание о созвоне',
-    cat:'reminder', channel:'whatsapp', author:'ai', active:true, ai:true,
-    body:`{{name}}, добрый день! 🙂
-
-Напоминаю про наш созвон сегодня в {{time}}. Подключиться можно по ссылке: [zoom-link]
-
-Если что-то изменилось — дайте знать, перенесём.`,
-    vars:['name','time'],
-    uses:8, last_used:'2026-04-17'
-  },
-  {
-    id:11, name:'birthday_short', title:'Короткое поздравление с ДР',
-    cat:'birthday', channel:'whatsapp', author:'me', active:true, ai:false,
-    body:`{{name}}, с днём рождения! 🎂✨
-
-Желаю исполнения путешественнических желаний — и пусть в этом году будет хотя бы один круиз вашей мечты ⚓
-
-Обнимаю!`,
-    vars:['name'],
-    uses:3, last_used:'2026-03-30'
-  },
-  {
-    id:12, name:'partner_invite_v1', title:'Приглашение в партнёрку',
-    cat:'intro', channel:'telegram', author:'me', active:false, ai:false,
-    body:`Привет, {{name}}!
-
-Хочу предложить тебе кое-что — присоединиться ко мне в InCruises как партнёр. Не как клиент, а именно как партнёр — будешь зарабатывать процент с приведённых людей.
-
-Если интересно, расскажу подробно. Если нет — не вопрос, забудем 🙂`,
-    vars:['name'],
-    uses:2, last_used:'2026-03-22'
-  },
-  {
-    id:13, name:'sys_consent_confirm', title:'Авто-подтверждение согласия',
-    cat:'closing', channel:'email', author:'sys', active:true, ai:false,
-    body:`Здравствуйте, {{name}}!
-
-Спасибо за интерес к InCruises. Подтверждаем, что ваша заявка получена и партнёр {{my_name}} свяжется с вами в течение 24 часов.
-
-Это автоматическое подтверждение. Если вы передумали — просто проигнорируйте это письмо.
-
-— Команда sairateam.com`,
-    vars:['name','my_name'],
-    uses:47, last_used:'2026-04-18'
-  },
-];
+let TPL_LOADING = false;
 
 let catFilter = 'all';
 let chFilter = 'all';
@@ -385,8 +250,8 @@ function snippet(text, n=120) {
 function updateStats() {
   const total = TEMPLATES.length;
   const active = TEMPLATES.filter(t => t.active).length;
-  const ai = TEMPLATES.filter(t => t.ai && t.active).length;
-  const uses = TEMPLATES.reduce((s,t) => s + t.uses, 0);
+  const ai = TEMPLATES.filter(t => t.ai_enabled && t.active).length;
+  const uses = TEMPLATES.reduce((s,t) => s + (t.uses_count||0), 0);
   document.getElementById('t-tpl-active').textContent = active;
   document.getElementById('st-tpl-total').textContent = total;
   document.getElementById('st-tpl-act').textContent = active;
@@ -403,18 +268,17 @@ function renderTemplates() {
   const q = tplSearch.toLowerCase().trim();
 
   let filtered = TEMPLATES.filter(t => {
-    if (catFilter !== 'all' && t.cat !== catFilter) return false;
+    if (catFilter !== 'all' && t.category !== catFilter) return false;
     if (chFilter !== 'all' && t.channel !== chFilter && t.channel !== 'any') return false;
     if (stFilter === 'active'   && !t.active) return false;
     if (stFilter === 'inactive' && t.active)  return false;
-    if (stFilter === 'ai'       && !t.ai)     return false;
+    if (stFilter === 'ai'       && !t.ai_enabled) return false;
     if (!q) return true;
-    const hay = `${t.name} ${t.title} ${t.body}`.toLowerCase();
+    const hay = `${t.name||''} ${t.title||''} ${t.content||''}`.toLowerCase();
     return hay.includes(q);
   });
 
-  // active first, then by uses desc
-  filtered.sort((a,b) => (b.active - a.active) || (b.uses - a.uses));
+  filtered.sort((a,b) => ((b.active?1:0) - (a.active?1:0)) || ((b.uses_count||0) - (a.uses_count||0)));
 
   if (filtered.length === 0) {
     list.innerHTML = '';
@@ -424,25 +288,25 @@ function renderTemplates() {
   empty.style.display = 'none';
 
   list.innerHTML = filtered.map(t => {
-    const cat = CAT_MAP[t.cat];
-    const ch  = CH_MAP[t.channel];
-    const au  = AUTHOR_MAP[t.author];
+    const cat = CAT_MAP[t.category] || { icon:'📋', label: t.category || '—' };
+    const ch  = CH_MAP[t.channel]  || { icon:'💬', label: t.channel || '—' };
+    const au  = AUTHOR_MAP[t.author] || AUTHOR_MAP.me;
     const status = t.active ? 'active' : 'inactive';
     return `
-      <div class="ti tpl-row ${status}" onclick="openTplModal(${t.id})">
+      <div class="ti tpl-row ${status}" onclick="openTplModal('${t.id}')">
         <div class="tpl-status-dot ${status}" title="${t.active?'Активен':'Неактивен'}"></div>
         <div class="ti-b">
-          <div class="ti-t">${t.title} ${t.ai?'<span style="color:var(--azure);font-size:11px">🤖</span>':''}</div>
-          <div class="tpl-name">${t.name}</div>
-          <div class="tpl-snippet">${snippet(t.body, 130)}</div>
+          <div class="ti-t">${esc(t.title||t.name)} ${t.ai_enabled?'<span style="color:var(--azure);font-size:11px">🤖</span>':''}</div>
+          <div class="tpl-name">${esc(t.name)}</div>
+          <div class="tpl-snippet">${esc(snippet(t.content||'', 130))}</div>
           <div class="tpl-meta">
             <span class="tpl-cat">${cat.icon} ${cat.label}</span>
-            <span class="tpl-ch ${t.channel}">${ch.icon} ${ch.label}</span>
+            <span class="tpl-ch ${t.channel||'any'}">${ch.icon} ${ch.label}</span>
             <span class="tpl-author ${au.cls}">${au.label}</span>
-            <span class="tpl-uses">📨 <b>${t.uses}</b> · ${t.last_used}</span>
+            <span class="tpl-uses">📨 <b>${t.uses_count||0}</b> · ${fmtDate(t.last_used_at)}</span>
           </div>
         </div>
-        <button class="mbtn mbtn-p" style="flex:none;padding:7px 11px;font-size:11px" onclick="event.stopPropagation();copyTpl(${t.id})">📋 Копировать</button>
+        <button class="mbtn mbtn-p" style="flex:none;padding:7px 11px;font-size:11px" onclick="event.stopPropagation();copyTpl('${t.id}')">📋 Копировать</button>
       </div>`;
   }).join('');
 }
@@ -475,21 +339,24 @@ function openTplModal(id) {
 function renderTplModal(id) {
   const t = TEMPLATES.find(x => x.id === id);
   if (!t) return;
-  const cat = CAT_MAP[t.cat];
-  const ch  = CH_MAP[t.channel];
-  const au  = AUTHOR_MAP[t.author];
+  const cat = CAT_MAP[t.category] || { icon:'📋', label: t.category || '—' };
+  const ch  = CH_MAP[t.channel]  || { icon:'💬', label: t.channel || '—' };
+  const au  = AUTHOR_MAP[t.author] || AUTHOR_MAP.me;
   const body = document.getElementById('tpl-modal-body');
-  const varsHtml = t.vars.length
-    ? t.vars.map(v => `<div class="var-row"><span class="var-key">{{${v}}}</span><span class="var-val">${SAMPLE_DATA[v] !== undefined ? SAMPLE_DATA[v] : '<i style="color:var(--td)">не задано</i>'}</span></div>`).join('')
+  const vars = Array.isArray(t.vars) ? t.vars : [];
+  const content = t.content || '';
+  const varsHtml = vars.length
+    ? vars.map(v => `<div class="var-row"><span class="var-key">{{${esc(v)}}}</span><span class="var-val">${SAMPLE_DATA[v] !== undefined ? esc(SAMPLE_DATA[v]) : '<i style="color:var(--td)">не задано</i>'}</span></div>`).join('')
     : `<div style="font-size:12px;color:var(--td);text-align:center;padding:12px">Шаблон без переменных</div>`;
+  const sysBadge = t.partner_id ? '' : '<span class="tpl-author sys" style="margin-left:6px">⚙️ Системный</span>';
   body.innerHTML = `
     <div class="modal-head">
       <div class="la lead-ava" style="background:linear-gradient(135deg,var(--ocean),var(--azure))">${cat.icon}</div>
       <div>
-        <div class="modal-ttl">${t.title}</div>
-        <div class="modal-sub"><span class="tpl-name">${t.name}</span> · ${cat.label} · <span class="tpl-ch ${t.channel}">${ch.icon} ${ch.label}</span></div>
+        <div class="modal-ttl">${esc(t.title||t.name)}</div>
+        <div class="modal-sub"><span class="tpl-name">${esc(t.name)}</span> · ${cat.label} · <span class="tpl-ch ${t.channel||'any'}">${ch.icon} ${ch.label}</span></div>
       </div>
-      <span class="tpl-author ${au.cls}" style="margin-left:auto">${au.label}</span>
+      <span class="tpl-author ${au.cls}" style="margin-left:auto">${au.label}</span>${sysBadge}
     </div>
 
     <div class="tab-switch" id="tpl-tabs">
@@ -498,30 +365,30 @@ function renderTplModal(id) {
     </div>
 
     ${modalView === 'source'
-      ? `<div class="tpl-body-block">${highlightVars(t.body)}</div>`
-      : `<div class="tpl-preview-block">${fillVars(t.body, SAMPLE_DATA)}</div>`
+      ? `<div class="tpl-body-block">${highlightVars(esc(content))}</div>`
+      : `<div class="tpl-preview-block">${esc(fillVars(content, SAMPLE_DATA))}</div>`
     }
 
     <div style="font-size:12px;color:var(--td);font-weight:700;text-transform:uppercase;letter-spacing:.5px;margin:16px 0 8px">🔧 Переменные шаблона</div>
     <div class="vars-list">${varsHtml}</div>
 
     <div class="modal-grid" style="margin-top:16px">
-      <div class="mg-row"><span class="mg-k">📨 Использовано</span><span class="mg-v"><b>${t.uses}</b> раз · последний раз ${t.last_used}</span></div>
-      <div class="mg-row"><span class="mg-k">🤖 Доступен AI</span><span class="mg-v">${t.ai ? '✅ Да — AI может использовать в черновиках' : '❌ Нет — только ручная отправка'}</span></div>
+      <div class="mg-row"><span class="mg-k">📨 Использовано</span><span class="mg-v"><b>${t.uses_count||0}</b> раз · последний раз ${fmtDate(t.last_used_at)}</span></div>
+      <div class="mg-row"><span class="mg-k">🤖 Доступен AI</span><span class="mg-v">${t.ai_enabled ? '✅ Да — AI может использовать в черновиках' : '❌ Нет — только ручная отправка'}</span></div>
       <div class="mg-row"><span class="mg-k">${t.active?'🟢':'⚪'} Статус</span><span class="mg-v">${t.active ? 'Активен' : 'Неактивен'}</span></div>
     </div>
 
     <div class="modal-actions">
-      <button class="mbtn mbtn-p" onclick="copyTpl(${t.id})">📋 Копировать ${modalView==='preview'?'preview':'шаблон'}</button>
-      <button class="mbtn mbtn-g" onclick="editTpl(${t.id})">✏️ Редактировать</button>
-      <button class="mbtn" onclick="duplicateTpl(${t.id})">📄 Дублировать</button>
+      <button class="mbtn mbtn-p" onclick="copyTpl('${t.id}')">📋 Копировать ${modalView==='preview'?'preview':'шаблон'}</button>
+      ${t.partner_id ? `<button class="mbtn mbtn-g" onclick="editTpl('${t.id}')">✏️ Редактировать</button>` : ''}
+      <button class="mbtn" onclick="duplicateTpl('${t.id}')">📄 Дублировать</button>
     </div>
-    <div class="modal-actions" style="margin-top:8px">
-      <button class="mbtn ${t.active?'mbtn-r':'mbtn-g'}" onclick="toggleActive(${t.id})">${t.active ? '⚪ Деактивировать' : '🟢 Активировать'}</button>
-      <button class="mbtn mbtn-r" onclick="deleteTpl(${t.id})">🗑 Удалить</button>
-    </div>
+    ${t.partner_id ? `
+      <div class="modal-actions" style="margin-top:8px">
+        <button class="mbtn ${t.active?'mbtn-r':'mbtn-g'}" onclick="toggleActive('${t.id}')">${t.active ? '⚪ Деактивировать' : '🟢 Активировать'}</button>
+        <button class="mbtn mbtn-r" onclick="deleteTpl('${t.id}')">🗑 Удалить</button>
+      </div>` : ''}
   `;
-  // bind tab switch
   document.getElementById('tpl-tabs').addEventListener('click', e => {
     const btn = e.target.closest('button'); if (!btn) return;
     modalView = btn.dataset.v; renderTplModal(id);
@@ -541,41 +408,92 @@ function showToast(msg) {
 function copyTpl(id) {
   const t = TEMPLATES.find(x => x.id === id);
   if (!t) return;
-  const text = modalView === 'preview' ? fillVars(t.body, SAMPLE_DATA) : t.body;
+  const content = t.content || '';
+  const text = modalView === 'preview' ? fillVars(content, SAMPLE_DATA) : content;
   if (navigator.clipboard) navigator.clipboard.writeText(text).catch(() => {});
   showToast(`📋 ${modalView === 'preview' ? 'Preview' : 'Шаблон'} скопирован: ${t.name}`);
 }
-function toggleActive(id) {
+async function toggleActive(id) {
   const t = TEMPLATES.find(x => x.id === id);
-  if (!t) return;
+  if (!t || !t.partner_id) return;
+  const prev = t.active;
   t.active = !t.active;
   renderTemplates(); updateStats(); renderTplModal(id);
-  showToast(t.active ? '🟢 Шаблон активирован' : '⚪ Шаблон деактивирован');
+  try {
+    await sb('PATCH', `templates?id=eq.${id}`, { active: t.active, updated_at: new Date().toISOString() });
+    showToast(t.active ? '🟢 Шаблон активирован' : '⚪ Шаблон деактивирован');
+  } catch (e) {
+    t.active = prev;
+    renderTemplates(); updateStats(); renderTplModal(id);
+    showToast('❌ Не удалось сохранить: ' + e.message);
+  }
 }
-function duplicateTpl(id) {
+async function duplicateTpl(id) {
   const t = TEMPLATES.find(x => x.id === id);
-  if (!t) return;
-  const copy = { ...t, id: Math.max(...TEMPLATES.map(x=>x.id))+1, name: t.name + '_copy', title: t.title + ' (копия)', uses: 0, last_used: '—', active: false };
-  TEMPLATES.push(copy);
-  closeTplModal();
-  renderTemplates(); updateStats();
-  showToast(`📄 Дубликат создан: ${copy.name}`);
+  if (!t || !currentPartner) return;
+  const suffix = Math.random().toString(36).slice(2, 6);
+  const payload = {
+    name:       `${t.name}_copy_${suffix}`,
+    title:      `${t.title || t.name} (копия)`,
+    category:   t.category,
+    channel:    t.channel,
+    author:     'me',
+    active:     false,
+    ai_enabled: !!t.ai_enabled,
+    content:    t.content || '',
+    vars:       Array.isArray(t.vars) ? t.vars : [],
+    partner_id: currentPartner.id,
+  };
+  try {
+    const rows = await sb('POST', 'templates', payload);
+    const created = Array.isArray(rows) ? rows[0] : rows;
+    if (created) TEMPLATES.unshift(created);
+    closeTplModal();
+    renderTemplates(); updateStats();
+    showToast(`📄 Дубликат создан: ${created?.name || payload.name}`);
+  } catch (e) {
+    showToast('❌ Не удалось дублировать: ' + e.message);
+  }
 }
 function editTpl(id)    { showToast('✏️ Редактор шаблонов появится в следующей итерации.'); }
-function deleteTpl(id) {
+async function deleteTpl(id) {
   const t = TEMPLATES.find(x => x.id === id);
-  if (!t) return;
-  if (!confirm(`Удалить шаблон "${t.title}" (${t.name})?`)) return;
-  const idx = TEMPLATES.findIndex(x => x.id === id);
-  TEMPLATES.splice(idx, 1);
-  closeTplModal();
-  renderTemplates(); updateStats();
-  showToast('🗑 Шаблон удалён');
+  if (!t || !t.partner_id) return;
+  if (!confirm(`Удалить шаблон "${t.title || t.name}" (${t.name})?`)) return;
+  try {
+    await sb('DELETE', `templates?id=eq.${id}`);
+    TEMPLATES = TEMPLATES.filter(x => x.id !== id);
+    closeTplModal();
+    renderTemplates(); updateStats();
+    showToast('🗑 Шаблон удалён');
+  } catch (e) {
+    showToast('❌ Не удалось удалить: ' + e.message);
+  }
 }
-function openNewTpl() { showToast('➕ Форма создания шаблона появится после миграции таблицы templates.'); }
+function openNewTpl() { showToast('➕ Форма создания шаблона появится в следующей итерации.'); }
 
-updateStats();
-renderTemplates();
+async function loadTemplates() {
+  if (TPL_LOADING) return;
+  TPL_LOADING = true;
+  const list = document.getElementById('tpl-list');
+  try {
+    currentPartner = await getCurrentPartner();
+    if (!currentPartner) {
+      list.innerHTML = '<div class="leads-empty"><p>Партнёр не найден.</p></div>';
+      return;
+    }
+    TEMPLATES = await sb('GET', 'templates?select=*&order=active.desc,uses_count.desc');
+    renderTemplates();
+    updateStats();
+  } catch (e) {
+    console.error('loadTemplates:', e);
+    list.innerHTML = `<div class="leads-empty"><p>Ошибка загрузки: ${esc(e.message)}</p></div>`;
+  } finally {
+    TPL_LOADING = false;
+  }
+}
+
+loadTemplates();
 </script>
 </body>
 </html>

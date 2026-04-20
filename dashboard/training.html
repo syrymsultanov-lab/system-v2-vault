@@ -192,13 +192,11 @@
       </div>
     </div>
     <div class="pnl-tabs" id="tr-cat" style="padding:0 2px 6px">
-      <button class="pt active" data-c="all">Все категории</button>
-      <button class="pt" data-c="start">🚀 Старт</button>
-      <button class="pt" data-c="sales">💼 Продажи</button>
-      <button class="pt" data-c="product">🚢 Продукт</button>
-      <button class="pt" data-c="compliance">⚖️ Compliance</button>
-      <button class="pt" data-c="ai">🤖 AI</button>
-      <button class="pt" data-c="tech">⚙️ Система</button>
+      <button class="pt active" data-c="all">Все уровни</button>
+      <button class="pt" data-c="basic">🌱 Базовый</button>
+      <button class="pt" data-c="middle">🌿 Средний</button>
+      <button class="pt" data-c="advanced">🌳 Продвинутый</button>
+      <button class="pt" data-c="required">⚠ Только обязательные</button>
     </div>
     <div class="sch">
       <input type="text" id="tr-search" class="sch-i" placeholder="🔍 Поиск по названию модуля или описанию…">
@@ -220,22 +218,16 @@
   </div>
 </div>
 
+<script src="assets/js/api.js"></script>
 <script src="assets/js/dashboard.js"></script>
 <script>
 initDashboard('training');
+requireAuth();
 
-const CAT_MAP = {
-  start:      { label:'Старт',      icon:'🚀' },
-  sales:      { label:'Продажи',    icon:'💼' },
-  product:    { label:'Продукт',    icon:'🚢' },
-  compliance: { label:'Compliance', icon:'⚖️' },
-  ai:         { label:'AI',         icon:'🤖' },
-  tech:       { label:'Система',    icon:'⚙️' },
-};
 const LVL_MAP = {
-  1: { label:'Базовый',   cls:'lvl-1' },
-  2: { label:'Средний',   cls:'lvl-2' },
-  3: { label:'Продвинут', cls:'lvl-3' },
+  basic:    { label:'Базовый',    cls:'lvl-1', icon:'🌱' },
+  middle:   { label:'Средний',    cls:'lvl-2', icon:'🌿' },
+  advanced: { label:'Продвинут',  cls:'lvl-3', icon:'🌳' },
 };
 const LSN_TYPE = {
   video:     { icon:'▶️', label:'Видео' },
@@ -245,143 +237,22 @@ const LSN_TYPE = {
   practice:  { icon:'🛠', label:'Практика' },
 };
 
-// ===== MOCK MODULES =====
-const MODULES = [
-  {
-    id:1, cat:'start', icon:'🚀', level:1, required:true, cert:true,
-    title:'Старт партнёра — первые 7 дней',
-    desc:'Что делать сразу после регистрации: настроить профиль, добавить первые 20 контактов, отправить тестовую заявку.',
-    lessons:[
-      { title:'Знакомство с системой',         type:'video',     min:8,  done:true },
-      { title:'Настройка профиля и реф-кода',  type:'practice',  min:10, done:true },
-      { title:'Первые 20 контактов: упражнение',type:'checklist',min:20, done:true },
-      { title:'Тестовая заявка через лендинг', type:'practice',  min:10, done:true },
-      { title:'Чек-лист готовности к работе',  type:'quiz',      min:5,  done:true },
-    ]
-  },
-  {
-    id:2, cat:'compliance', icon:'⚖️', level:1, required:true, cert:true,
-    title:'Compliance: что нельзя обещать',
-    desc:'Политика InCruises и Meta/WABA: запрещённые формулировки, гарантии дохода, медицинские обещания. Обязательно перед AI.',
-    lessons:[
-      { title:'Запрет гарантий дохода',          type:'article', min:8,  done:true },
-      { title:'Meta/WABA: что банит мессенджер', type:'article', min:6,  done:true },
-      { title:'Примеры опасных формулировок',    type:'video',   min:12, done:true },
-      { title:'Финальный тест на знание правил', type:'quiz',    min:10, done:true },
-    ]
-  },
-  {
-    id:3, cat:'sales', icon:'💼', level:2, required:true, cert:false,
-    title:'Скрипты продаж: тёплый и холодный контакт',
-    desc:'Как начать диалог в WhatsApp/Telegram. Восемь готовых скриптов, шаблоны для разных ситуаций.',
-    lessons:[
-      { title:'Психология первого сообщения',  type:'video',     min:14, done:true },
-      { title:'Тёплый контакт: 4 скрипта',     type:'article',   min:12, done:true },
-      { title:'Холодный контакт: 4 скрипта',   type:'article',   min:12, done:true },
-      { title:'Адаптация под мессенджер',      type:'video',     min:10, done:true },
-      { title:'Практика: напиши 3 диалога',    type:'practice',  min:25, done:false },
-      { title:'Разбор ошибок',                 type:'video',     min:15, done:false },
-      { title:'Тон голоса и эмодзи',           type:'article',   min:8,  done:false },
-      { title:'Тест по скриптам',              type:'quiz',      min:10, done:false },
-    ]
-  },
-  {
-    id:4, cat:'sales', icon:'🛡', level:2, required:false, cert:true,
-    title:'Работа с возражениями',
-    desc:'«Это пирамида?», «Дорого», «Подумаю», «У меня нет времени». Как отвечать без давления.',
-    lessons:[
-      { title:'6 топ-возражений в InCruises',     type:'video',  min:18, done:true },
-      { title:'Скрипт «Это пирамида?»',           type:'article',min:8,  done:true },
-      { title:'Скрипт «Дорого / нет денег»',      type:'article',min:8,  done:false },
-      { title:'Скрипт «Подумаю / посоветуюсь»',   type:'article',min:8,  done:false },
-      { title:'Когда отпустить лида (не давить)', type:'video',  min:10, done:false },
-      { title:'Финальный тест',                   type:'quiz',   min:10, done:false },
-    ]
-  },
-  {
-    id:5, cat:'product', icon:'🚢', level:1, required:true, cert:true,
-    title:'Продукт InCruises: круизы, планы, баллы',
-    desc:'Membership Plans (Standard/Elite/Black), reward credits, какие линии включены, как считаются баллы.',
-    lessons:[
-      { title:'Как устроен InCruises',         type:'video',    min:12, done:false },
-      { title:'Membership Plans: 3 уровня',    type:'article',  min:10, done:false },
-      { title:'Reward Credits: математика',    type:'article',  min:8,  done:false },
-      { title:'Круизные линии в каталоге',     type:'article',  min:6,  done:false },
-      { title:'Как забронировать круиз',       type:'video',    min:10, done:false },
-      { title:'FAQ: топ-15 вопросов клиентов', type:'article',  min:14, done:false },
-      { title:'Тест по продукту',              type:'quiz',     min:12, done:false },
-    ]
-  },
-  {
-    id:6, cat:'product', icon:'💰', level:2, required:false, cert:true,
-    title:'Compensation Plan: 6 источников дохода',
-    desc:'DAB, MAB, Matching, TLB, Recurring, Foundation Bonus. Как растёт ранг и что нужно для перехода.',
-    lessons:[
-      { title:'Daily Activation Bonus (DAB)',    type:'article', min:8,  done:false },
-      { title:'Monthly Activation Bonus (MAB)',  type:'article', min:6,  done:false },
-      { title:'Matching Bonus',                  type:'video',   min:12, done:false },
-      { title:'TLB и рекуррентный доход',        type:'article', min:10, done:false },
-      { title:'Калькулятор 3×3×3',               type:'practice',min:15, done:false },
-      { title:'Тест по плану вознаграждений',    type:'quiz',    min:10, done:false },
-    ]
-  },
-  {
-    id:7, cat:'tech', icon:'⚙️', level:1, required:true, cert:false,
-    title:'Дашборд SYSTEM V2: полный тур',
-    desc:'9 вкладок, фильтры, поиск, как читать статусы лидов и контактов, как пользоваться задачами.',
-    lessons:[
-      { title:'Обзор 9 вкладок',                 type:'video',     min:10, done:true },
-      { title:'Заявки: статусы и квалификация',  type:'article',   min:8,  done:true },
-      { title:'Контакты vs Лиды: разница',       type:'article',   min:5,  done:true },
-      { title:'Задачи: приоритеты и сроки',      type:'video',     min:8,  done:false },
-      { title:'Чек-лист уверенного юзера',       type:'checklist', min:10, done:false },
-    ]
-  },
-  {
-    id:8, cat:'ai', icon:'🤖', level:2, required:true, cert:true,
-    title:'AI-агент: работа с черновиками',
-    desc:'Полуавтомат: AI делает черновик, вы редактируете и одобряете. Как НЕ потерять контроль и не нарушить compliance.',
-    lessons:[
-      { title:'Как AI создаёт черновики',         type:'video',    min:10, done:false },
-      { title:'Принцип «человек одобряет всё»',   type:'article',  min:6,  done:false },
-      { title:'Когда нужно править AI вручную',   type:'article',  min:8,  done:false },
-      { title:'Финальный тест: 5 кейсов',         type:'quiz',     min:12, done:false },
-    ]
-  },
-  {
-    id:9, cat:'sales', icon:'📨', level:1, required:false, cert:false,
-    title:'Рекрутинг: первый шаг к партнёрству',
-    desc:'Как пригласить контакт стать партнёром. Реф-ссылка, презентация плана, follow-up.',
-    lessons:[
-      { title:'Когда контакт готов к рекрутингу', type:'article',  min:8,  done:false },
-      { title:'Презентация плана: 7 минут',       type:'video',    min:14, done:false },
-      { title:'Использование реф-ссылки',         type:'practice', min:10, done:false },
-      { title:'Follow-up: что и когда писать',    type:'article',  min:8,  done:false },
-      { title:'Холодный круг: первые 50',         type:'checklist',min:15, done:false },
-      { title:'Тест по рекрутингу',               type:'quiz',     min:10, done:false },
-    ]
-  },
-  {
-    id:10, cat:'tech', icon:'📞', level:3, required:false, cert:true,
-    title:'Продвинутый: интеграция WhatsApp Business API',
-    desc:'Как подключить WABA, лимиты, шаблоны, что грозит за нарушение Meta policy. Только для опытных.',
-    lessons:[
-      { title:'WABA: что это и зачем',          type:'article', min:10, done:false },
-      { title:'Подключение через провайдера',   type:'video',   min:18, done:false },
-      { title:'Шаблоны и approval Meta',        type:'article', min:12, done:false },
-      { title:'Quality rating и риски бана',    type:'video',   min:10, done:false },
-    ]
-  },
-];
+let MODULES = [];
+let currentPartner = null;
 
-// Заполняем completed_lessons
-MODULES.forEach(m => {
-  m.completed = m.lessons.filter(l => l.done).length;
+function esc(s) {
+  return String(s ?? '').replace(/[&<>"']/g, c => (
+    { '&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;' }[c]
+  ));
+}
+
+function recomputeModule(m) {
   m.total = m.lessons.length;
-  m.duration = m.lessons.reduce((s,l) => s + l.min, 0);
+  m.completed = m.lessons.filter(l => l.done).length;
+  m.duration = m.lessons.reduce((s,l) => s + (l.duration_min||0), 0);
   m.pct = m.total ? Math.round(m.completed / m.total * 100) : 0;
-  m.status = m.pct === 100 ? 'done' : m.pct === 0 ? 'not_started' : 'progress';
-});
+  m.status = m.total === 0 ? 'not_started' : (m.pct === 100 ? 'done' : m.pct === 0 ? 'not_started' : 'progress');
+}
 
 let statusFilter = 'all';
 let catFilter = 'all';
@@ -392,7 +263,7 @@ function updateStats() {
   const total = MODULES.length;
   const done = MODULES.filter(m => m.status === 'done').length;
   const prog = MODULES.filter(m => m.status === 'progress').length;
-  const cert = MODULES.filter(m => m.status === 'done' && m.cert).length;
+  const cert = MODULES.filter(m => m.status === 'done' && m.has_cert).length;
   const allLessons = MODULES.reduce((s,m) => s + m.total, 0);
   const allDone    = MODULES.reduce((s,m) => s + m.completed, 0);
   const overall    = allLessons ? Math.round(allDone / allLessons * 100) : 0;
@@ -419,15 +290,15 @@ function renderModules() {
 
   let filtered = MODULES.filter(m => {
     if (statusFilter !== 'all' && m.status !== statusFilter) return false;
-    if (catFilter !== 'all' && m.cat !== catFilter) return false;
+    if (catFilter === 'required') { if (!m.required) return false; }
+    else if (catFilter !== 'all' && m.level !== catFilter) return false;
     if (!q) return true;
-    const hay = `${m.title} ${m.desc} ${CAT_MAP[m.cat]?.label || ''}`.toLowerCase();
+    const hay = `${m.title||''} ${m.description||''} ${LVL_MAP[m.level]?.label || ''}`.toLowerCase();
     return hay.includes(q);
   });
 
-  // Сортировка: required первыми, потом in_progress, потом not_started, потом done
   const order = { progress:0, not_started:1, done:2 };
-  filtered.sort((a,b) => (b.required - a.required) || (order[a.status] - order[b.status]) || (b.pct - a.pct));
+  filtered.sort((a,b) => ((b.required?1:0) - (a.required?1:0)) || (order[a.status] - order[b.status]) || (b.pct - a.pct) || (a.order_n - b.order_n));
 
   if (filtered.length === 0) {
     list.style.display = 'none';
@@ -438,20 +309,19 @@ function renderModules() {
   empty.style.display = 'none';
 
   list.innerHTML = filtered.map(m => {
-    const cat = CAT_MAP[m.cat];
-    const lvl = LVL_MAP[m.level];
+    const lvl = LVL_MAP[m.level] || LVL_MAP.basic;
     const reqBadge  = m.required ? '<span class="mb-tag req">⚠ Обязательно</span>' : '';
-    const certBadge = m.cert     ? '<span class="mb-tag cert">🏆 Сертификат</span>' : '';
+    const certBadge = m.has_cert ? '<span class="mb-tag cert">🏆 Сертификат</span>' : '';
     return `
-      <div class="mod ${m.status}" onclick="openTrModal(${m.id})">
+      <div class="mod ${m.status}" onclick="openTrModal('${m.id}')">
         <div class="mod-h">
-          <div class="mod-icon">${m.icon}</div>
+          <div class="mod-icon">${lvl.icon}</div>
           <div class="mod-h-r">
-            <div class="mod-t">${m.title}</div>
-            <div class="mod-cat">${cat.icon} ${cat.label} · ${m.duration} мин</div>
+            <div class="mod-t">${esc(m.title)}</div>
+            <div class="mod-cat">${lvl.label} · ${m.duration} мин</div>
           </div>
         </div>
-        <div class="mod-d">${m.desc}</div>
+        <div class="mod-d">${esc(m.description || '')}</div>
         <div class="mod-badges">
           <span class="mb-tag ${lvl.cls}">${lvl.label}</span>
           ${reqBadge}
@@ -483,42 +353,43 @@ document.getElementById('tr-search').addEventListener('input', e => { trSearch =
 function openTrModal(id) {
   const m = MODULES.find(x => x.id === id);
   if (!m) return;
-  const cat = CAT_MAP[m.cat];
-  const lvl = LVL_MAP[m.level];
+  const lvl = LVL_MAP[m.level] || LVL_MAP.basic;
   const body = document.getElementById('tr-modal-body');
-  const lessonsHtml = m.lessons.map((l, i) => {
-    const lt = LSN_TYPE[l.type] || { icon:'📄', label:l.type };
-    return `
-      <div class="lesson ${l.done?'done':''}" onclick="toggleLesson(${m.id},${i})">
-        <div class="ls-check">${l.done?'✓':''}</div>
-        <div class="ls-icon">${lt.icon}</div>
-        <div class="ls-b">
-          <div class="ls-t">${l.title}</div>
-          <div class="ls-m">${lt.label} · ${l.min} мин</div>
-        </div>
-      </div>`;
-  }).join('');
+  const lessonsHtml = m.lessons.length === 0
+    ? '<div style="font-size:12px;color:var(--td);padding:10px">В модуле пока нет уроков.</div>'
+    : m.lessons.map(l => {
+      const lt = LSN_TYPE[l.type] || { icon:'📄', label:l.type };
+      return `
+        <div class="lesson ${l.done?'done':''}" onclick="toggleLesson('${m.id}','${l.id}')">
+          <div class="ls-check">${l.done?'✓':''}</div>
+          <div class="ls-icon">${lt.icon}</div>
+          <div class="ls-b">
+            <div class="ls-t">${esc(l.title)}</div>
+            <div class="ls-m">${lt.label} · ${l.duration_min||0} мин</div>
+          </div>
+        </div>`;
+    }).join('');
   const ctaLabel = m.status === 'done' ? '↻ Повторить модуль' : (m.status === 'progress' ? '▶️ Продолжить' : '▶️ Начать модуль');
   body.innerHTML = `
     <div class="modal-head">
-      <div class="mod-icon" style="width:50px;height:50px;border-radius:14px;font-size:24px">${m.icon}</div>
+      <div class="mod-icon" style="width:50px;height:50px;border-radius:14px;font-size:24px">${lvl.icon}</div>
       <div>
-        <div class="modal-ttl">${m.title}</div>
-        <div class="modal-sub">${cat.icon} ${cat.label} · ${m.duration} мин · ${lvl.label}</div>
+        <div class="modal-ttl">${esc(m.title)}</div>
+        <div class="modal-sub">${lvl.label} · ${m.duration} мин</div>
       </div>
       <div class="mod-pct" style="margin-left:auto;font-size:24px">${m.pct}%</div>
     </div>
-    <div style="font-size:13px;color:var(--tm);line-height:1.5;margin-bottom:14px">${m.desc}</div>
+    <div style="font-size:13px;color:var(--tm);line-height:1.5;margin-bottom:14px">${esc(m.description || '')}</div>
     <div class="mod-bar" style="margin-bottom:6px"><div class="mod-bar-f" style="width:${m.pct}%"></div></div>
     <div style="display:flex;justify-content:space-between;font-size:11px;color:var(--td);margin-bottom:18px">
       <span>📚 <b style="color:var(--tb)">${m.completed}</b> / ${m.total} уроков</span>
-      <span>${m.required ? '⚠ Обязательно' : 'По желанию'} · ${m.cert ? '🏆 Сертификат' : 'без сертификата'}</span>
+      <span>${m.required ? '⚠ Обязательно' : 'По желанию'} · ${m.has_cert ? '🏆 Сертификат' : 'без сертификата'}</span>
     </div>
     <div style="font-size:12px;color:var(--td);font-weight:700;text-transform:uppercase;letter-spacing:.5px;margin-bottom:8px">📖 Уроки модуля</div>
     <div>${lessonsHtml}</div>
     <div class="modal-actions" style="margin-top:18px">
-      <button class="mbtn mbtn-p" onclick="startModule(${m.id})">${ctaLabel}</button>
-      ${m.status === 'done' && m.cert ? `<button class="mbtn mbtn-gold" onclick="downloadCert(${m.id})">🏆 Сертификат PDF</button>` : ''}
+      <button class="mbtn mbtn-p" onclick="startModule('${m.id}')">${ctaLabel}</button>
+      ${m.status === 'done' && m.has_cert ? `<button class="mbtn mbtn-gold" onclick="downloadCert('${m.id}')">🏆 Сертификат PDF</button>` : ''}
     </div>
   `;
   document.getElementById('tr-modal').classList.add('active');
@@ -534,27 +405,66 @@ function showToast(msg) {
   clearTimeout(showToast._tid);
   showToast._tid = setTimeout(() => el.classList.remove('show'), 2800);
 }
-function toggleLesson(modId, idx) {
+async function toggleLesson(modId, lessonId) {
   const m = MODULES.find(x => x.id === modId);
   if (!m) return;
-  m.lessons[idx].done = !m.lessons[idx].done;
-  m.completed = m.lessons.filter(l => l.done).length;
-  m.pct = m.total ? Math.round(m.completed / m.total * 100) : 0;
-  m.status = m.pct === 100 ? 'done' : m.pct === 0 ? 'not_started' : 'progress';
-  renderModules(); updateStats();
-  openTrModal(modId);
-  if (m.status === 'done') showToast(`🏆 Модуль "${m.title}" завершён!`);
+  const l = m.lessons.find(x => x.id === lessonId);
+  if (!l) return;
+  const wasDone = l.done;
+  l.done = !wasDone;
+  recomputeModule(m);
+  renderModules(); updateStats(); openTrModal(modId);
+  try {
+    if (!wasDone) {
+      await sb('POST', 'training_progress', { partner_id: currentPartner.id, lesson_id: lessonId });
+    } else {
+      await sb('DELETE', `training_progress?partner_id=eq.${currentPartner.id}&lesson_id=eq.${lessonId}`);
+    }
+    if (m.status === 'done') showToast(`🏆 Модуль "${m.title}" завершён!`);
+  } catch (e) {
+    console.error('toggleLesson:', e);
+    l.done = wasDone;
+    recomputeModule(m);
+    renderModules(); updateStats(); openTrModal(modId);
+    showToast('❌ Не удалось сохранить: ' + e.message);
+  }
 }
 function startModule(id) {
   const m = MODULES.find(x => x.id === id);
-  showToast(`▶️ Запуск модуля "${m.title}". Плеер уроков появится в следующей итерации.`);
+  showToast(`▶️ Запуск модуля "${m?.title||''}". Плеер уроков появится в следующей итерации.`);
 }
 function downloadCert(id) {
   showToast(`🏆 Генерация сертификата PDF — появится после интеграции рендера.`);
 }
 
-updateStats();
-renderModules();
+async function loadTraining() {
+  const list = document.getElementById('tr-list');
+  try {
+    currentPartner = await getCurrentPartner();
+    if (!currentPartner) { list.innerHTML = '<div class="leads-empty"><p>Партнёр не найден.</p></div>'; return; }
+
+    const [mods, progress] = await Promise.all([
+      sb('GET', 'training_modules?select=*,lessons:training_lessons(*)&order=order_n.asc'),
+      sb('GET', `training_progress?partner_id=eq.${currentPartner.id}&select=lesson_id`),
+    ]);
+    const doneSet = new Set((progress||[]).map(p => p.lesson_id));
+
+    MODULES = (mods || []).map(m => {
+      const lessons = (m.lessons || []).slice().sort((a,b) => (a.order_n||0) - (b.order_n||0));
+      lessons.forEach(l => { l.done = doneSet.has(l.id); });
+      const mm = { ...m, lessons };
+      recomputeModule(mm);
+      return mm;
+    });
+
+    updateStats(); renderModules();
+  } catch (e) {
+    console.error('loadTraining:', e);
+    list.innerHTML = `<div class="leads-empty"><p>Ошибка загрузки: ${esc(e.message)}</p></div>`;
+  }
+}
+
+loadTraining();
 </script>
 </body>
 </html>

@@ -79,3 +79,26 @@ async function sb(method, path, body = null, extraHeaders = {}) {
   if (resp.status === 204) return null;
   return resp.json();
 }
+
+// ===== AUTH (GoTrue) =====
+async function sbAuth(method, path, body = null) {
+  const token = getAccessToken();
+  const headers = {
+    'apikey': SUPABASE_ANON_KEY,
+    'Authorization': `Bearer ${token || SUPABASE_ANON_KEY}`,
+    'Content-Type': 'application/json',
+  };
+  const opts = { method, headers };
+  if (body) opts.body = JSON.stringify(body);
+
+  const resp = await fetch(`${SUPABASE_URL}/auth/v1/${path}`, opts);
+  if (!resp.ok) {
+    let err;
+    try { err = await resp.json(); } catch { err = { message: resp.statusText }; }
+    const e = new Error(err.msg || err.message || `HTTP ${resp.status}`);
+    e.status = resp.status;
+    throw e;
+  }
+  if (resp.status === 204) return null;
+  return resp.json();
+}
