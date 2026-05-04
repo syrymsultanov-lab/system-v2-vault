@@ -2,7 +2,7 @@
 
 ## Проект
 SYSTEM V2.1 — AI-powered lead pipeline для MLM команды InCruises (250+ партнёров).
-Домен: sairateam.com | Supabase ref: `njwraxmlzglmofxiwmxs` | 15 таблиц (max 20)
+Домен: sairateam.com | Supabase ref: `njwraxmlzglmofxiwmxs` | 21 таблица (max 25)
 
 ## Роли
 - Сырым = owner, decision-maker
@@ -16,17 +16,16 @@ SYSTEM V2.1 — AI-powered lead pipeline для MLM команды InCruises (25
 - Automation: n8n на Hostinger VPS
 - Dashboard: Antigravity → Hostinger
 
-## 15 таблиц (после обкатки 2026-04-19)
+## 19 таблиц (актуально на 2026-05-04 — сверено с `mcp__supabase__list_tables`)
 
-**Ядро (8 из первоначальных, `contacts` переосмыслена):**
+**Ядро (7, `contacts` переосмыслена, `lead_status_log` дропнута 2026-04-29 — оставлен только `events_log`):**
 - `partners` — партнёры (19 кол.): +user_id→auth.users, bio, city, country, timezone, language, avatar_url, upline_id, rank, is_active, personal_volume, group_volume
-- `leads` — заявки (21): +priority, notes, budget, tags jsonb, assigned_at, updated_at
+- `leads` — заявки (22): +priority, notes, budget, tags jsonb, assigned_at, updated_at, score
 - `lead_messages` — сообщения лидам (6)
-- `lead_status_log` — история статусов (6)
 - `lead_channels` — **переименованная старая contacts** — каналы связи лида (tg/wa/email/phone/value)
-- `ai_jobs` — задачи AI (7)
+- `ai_jobs` — задачи AI (11): +partner_id, target_type, target_id, payload jsonb. Триггер `create_qualification_job` ставит status='queued', RPC `claim_next_ai_job` атомарно переводит в running
 - `templates` — шаблоны сообщений (16): +title, category (8 cat), channel (5 ch), author, active, ai_enabled, vars jsonb, uses_count, last_used_at, partner_id, updated_at
-- `events_log` — журнал событий (8): +actor, actor_id
+- `events_log` — журнал событий (8): +actor, actor_id (единственный журнал событий)
 
 **Новые (7 созданы 2026-04-19):**
 - `contacts` — **новая** «телефонная книга партнёра» (14): partner_id, name, phone, email, messenger, tag, notes, source, imported_from, invited_at
@@ -35,20 +34,43 @@ SYSTEM V2.1 — AI-powered lead pipeline для MLM команды InCruises (25
 - `partner_integrations` — N:1 (8): provider (wa/tg/ig/email/n8n/supabase), connected, config jsonb
 - `training_modules` (10), `training_lessons` (9), `training_progress` (4)
 
+**Сообщения (2, добавлены 2026-04-24):**
+- `inbound_messages` (9) — входящие сообщения: partner_id, channel, external_message_id, from_address, to_address, body, direction. WF5 пишет, WF6 читает
+- `outbound_messages` (9) — исходящие: partner_id, channel, to_address, body, status (draft/approved/sent/failed), sent_at. WF9 читает approved и отправляет
+
+**AI-pipeline (3, обнаружены 2026-05-04 — раньше не в списке):**
+- `lead_events` (6) — `lead_id, partner_id, event_type, payload, created_at`. **Имеет `event_type` колонку** (в отличие от events_log с `event`!). Журнал событий лидов. WF1/WF2/WF7 пишут.
+- `ai_recommendations` (9) — `partner_id, target_type, target_id, recommendation_type, recommendation_payload jsonb, confidence numeric, processed_at, created_at`. Bridge между qualifier (WF3) и task creator (WF4). Idempotency через `processed_at IS NULL` filter.
+- `ai_job_runs` (6) — `job_id, status, input, output, created_at`. Лог прогонов задач. Не используется активно.
+
 **Триггеры:**
 - `auth.users INSERT → partners` (auto-create partner row, backfill готов)
 - `partners INSERT → partner_settings` (дефолты создаются автоматом)
+- `leads INSERT → ai_jobs queued` (qualify_lead — WF3 cron подхватывает)
 
-**RLS:** все 15 таблиц own-only через `partner_id IN (SELECT id FROM partners WHERE user_id = auth.uid())`. Исключение: `partners` SELECT открыт всем authenticated (для структуры/ref). `templates` с `partner_id IS NULL` — системные, видны всем.
+## AI-pipeline (Phase B production 2026-05-04)
+```
+landing form → leads INSERT → (триггер) → ai_jobs queued
+WF3 cron 2 мин:  claim_next_ai_job RPC → OpenAI → score+temp+next_action+summary
+                 → leads.status=qualified+score → ai_recommendations row → ai_jobs.succeeded
+WF4 cron 2 мин:  fetch ai_recommendations[processed_at=null] → tasks INSERT → mark processed
+                 → events_log row (actor='system')
+WF13 cron 5 мин: reset_stuck_ai_jobs → running > 10 мин → failed
+```
+
+**RLS:** все 21 таблица own-only через `partner_id IN (SELECT id FROM partners WHERE user_id = auth.uid())`. Исключение: `partners` SELECT открыт всем authenticated (для структуры/ref). `templates` с `partner_id IS NULL` — системные, видны всем.
 
 ## Критические правила
 1. Contact ≠ Lead. Лиды только через форму. Контакты = телефонная книга
 2. Никаких гарантий дохода (InCruises policy + Meta/WABA)
 3. Один запрос = один выход. Не расширять scope
-4. DB first — всегда проверяй реальную схему Supabase перед генерацией
+4. DB first — **всегда `mcp__supabase__list_tables` + `information_schema.columns` перед SQL**. Не доверять заявленному числу таблиц в этом файле — реальность по `list_tables`.
 5. RLS: пустые результаты anon → проверь политики, не данные
 6. Lovable `types.ts` НЕ описывает реальную БД
-7. Старый проект (66 таблиц, ap-southeast-2) — мёртв
+7. Старый проект (66 таблиц, ap-southeast-2) — мёртв!!!
+8. Прежде чем начать работу, скажи, как ты будешь её проверять. Если не можешь придумать способ проверить результат — скажи об этом и попроси уточнить задачу!!!
+9. **events_log.actor — whitelist**: только `me|ai|system|partner|lead|anon` (или NULL). Кастомные значения отвергаются CHECK constraint. Для cron/n8n использовать `'system'`.
+10. **n8n jsonBody с nested `{}`**: использовать literal JSON template + `{{ JSON.stringify(...) }}` вместо `={{ {a:1, b:{nested}} }}` — последнее ломает parser. См. `feedback_n8n_jsonbody_expression`.
 
 ## Дизайн
 Premium Marine: Deep Emerald `#0B3D2E`, Midnight Navy `#0E1A2B`, Base Dark `#1C1F26`, Pale Aqua `#A8C5BC`, CTA Copper `#C97D4E`. Video hero: `hero-bg.mp4`
@@ -59,6 +81,14 @@ npx http-server . -p 3000
 # Открывать: http://127.0.0.1:3000/landing/?ref=TEST001
 # НЕ через file:// (CORS)
 ```
+
+## TODO для следующей сессии (Plan B WF1)
+Сейчас лендинг пишет в Supabase напрямую, WF1 webhook не вызывается. Решение 2026-05-04: переключить лендинг на WF1 webhook → активировать dedup + normalization + audit.
+1. WF1 — убрать ноду `Queue AI Job` (триггер уже создаёт job)
+2. `assets/js/app.js` — POST на `https://n8n.sairateam.com/webhook/system-v2/lead-intake` вместо прямого Supabase
+3. Deploy WF1 + FTP лендинг → E2E через `https://sairateam.com/?ref=SAIRA001`
+4. Обновить эту секцию (Phase B диаграмма + WF1 как канал интейка)
+Деталях см. `memory/project_wf1_plan_b_pending.md`.
 
 ## Build Plan (порядок)
 1. ✅ Финализировать CLAUDE.md

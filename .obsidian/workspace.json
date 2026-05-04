@@ -11,14 +11,10 @@
             "id": "d82373a10ad0894e",
             "type": "leaf",
             "state": {
-              "type": "markdown",
-              "state": {
-                "file": "obsidian-vault/projects/SYSTEM V2.md",
-                "mode": "source",
-                "source": false
-              },
-              "icon": "lucide-file",
-              "title": "SYSTEM V2"
+              "type": "graph",
+              "state": {},
+              "icon": "lucide-git-fork",
+              "title": "Граф"
             }
           }
         ]
@@ -185,17 +181,18 @@
   },
   "active": "d82373a10ad0894e",
   "lastOpenFiles": [
-    "dashboard/contacts.html.tmp.8768.1776585707415",
-    "dashboard/leads.html.tmp.8768.1776584880885",
-    "dashboard/leads.html.tmp.8768.1776584839029",
-    "dashboard/leads.html.tmp.8768.1776584796690",
-    "dashboard/leads.html.tmp.8768.1776584754066",
-    "dashboard/assets/js/api.js",
-    "dashboard/settings.html.tmp.8768.1776583544945",
-    "obsidian-vault/reference/Tech Stack.md.tmp.8768.1776583543540",
-    "obsidian-vault/reference/Tech Stack.md.tmp.8768.1776583542755",
-    "obsidian-vault/reference/Tech Stack.md.tmp.8768.1776583541851",
-    "obsidian-vault/CLAUDE.md.tmp.8768.1776583539656",
+    "dashboard/templates.html.tmp.16096.1776602162198",
+    "dashboard/templates.html.tmp.16096.1776602094227",
+    "dashboard/templates.html.tmp.16096.1776602078859",
+    "dashboard/training.html.tmp.16096.1776601988348",
+    "dashboard/training.html.tmp.16096.1776601960276",
+    "dashboard/training.html.tmp.16096.1776601938424",
+    "dashboard/training.html.tmp.16096.1776601912407",
+    "dashboard/training.html.tmp.16096.1776601895900",
+    "dashboard/training.html.tmp.16096.1776601872290",
+    "dashboard/training.html.tmp.16096.1776601860827",
+    "dashboard/training.html.tmp.16096.1776601851882",
+    "obsidian-vault/projects/SYSTEM V2.md",
     "obsidian-vault/projects/Referral System.md",
     "obsidian-vault/projects/n8n Workflows.md",
     "obsidian-vault/projects/Landing Page.md",
@@ -205,7 +202,6 @@
     "SYSTEM_V2_n8n_workflows_JSON/n8n-analysis-wf1-—-lead-intake.md",
     "Файлы с Google диска/ЗАПУСК SYSTEM V2 каждый раз перед началом работы.md",
     "assets/images/favicon.svg",
-    "obsidian-vault/projects/SYSTEM V2.md",
     "obsidian-vault/daily/2026-04-18.md",
     "Файлы с Google диска/README.md",
     "obsidian-vault/README.md",

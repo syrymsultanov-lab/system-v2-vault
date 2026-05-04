@@ -209,6 +209,43 @@ input, select, textarea { font-family: inherit; }
   line-height: 1.6;
 }
 
+/* === SECTION BACKGROUNDS === */
+.section-bg {
+  position: relative;
+  background-size: cover;
+  background-position: center;
+  background-repeat: no-repeat;
+  isolation: isolate;
+}
+.section-bg::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(180deg, rgba(10,22,40,0.82) 0%, rgba(2,62,138,0.78) 100%);
+  z-index: -1;
+}
+.section-bg .section-label { color: var(--sky); }
+.section-bg .section-title { color: #fff; }
+.section-bg .section-desc { color: rgba(255,255,255,0.78); }
+.section-bg .step-card h3 { color: #fff; }
+.section-bg .step-card p { color: rgba(255,255,255,0.78); }
+.section-bg .step-num { color: var(--sky); }
+.section-bg .compare-table {
+  background: rgba(255,255,255,0.97);
+  border-radius: var(--radius-lg);
+  overflow: hidden;
+  box-shadow: 0 20px 60px rgba(0,0,0,0.25);
+}
+
+.bg-pool { background-image: url('../images/pool.png'); }
+.bg-suite { background-image: url('../images/suite.png'); }
+.bg-restaurant { background-image: url('../images/restaurant.png'); }
+.bg-port { background-image: url('../images/port.png'); }
+
+@media (min-width: 1024px) {
+  .section-bg { background-attachment: fixed; }
+}
+
 /* === HERO === */
 .hero {
   position: relative;
@@ -217,6 +254,20 @@ input, select, textarea { font-family: inherit; }
   align-items: center;
   padding: 100px 0 60px;
   overflow: hidden;
+}
+.hero-video {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  z-index: 0;
+}
+.hero-overlay {
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(180deg, rgba(248,253,255,0.55) 0%, rgba(202,240,248,0.70) 100%);
+  z-index: 1;
 }
 .hero-bg {
   position: absolute;

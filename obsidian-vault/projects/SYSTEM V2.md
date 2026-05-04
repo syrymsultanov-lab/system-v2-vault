@@ -2,13 +2,13 @@
 project: system-v2
 status: active
 supabase-ref: njwraxmlzglmofxiwmxs
-tables: 15
-max-tables: 20
+tables: 19
+max-tables: 25
 hosting: hostinger
 domain: sairateam.com
 stack: static HTML/CSS/JS
 created: 2025-11-01
-updated: 2026-04-19
+updated: 2026-05-04
 ---
 
 # SYSTEM V2.1 — AI-Powered MLM Pipeline
@@ -32,28 +32,19 @@ Landing (sairateam.com) → Supabase (leads) → n8n (VPS) → AI Agent → Chan
 - **Automation**: n8n на Hostinger VPS
 - **Dashboard**: строится в Antigravity, хостится на Hostinger
 
-## 15 таблиц (после обкатки 2026-04-19)
+## 19 таблиц (актуально на 2026-05-04, см. CLAUDE.md для полного списка)
 
-**Ядро (8, обновлены):**
-1. `partners` (19) — +user_id→auth.users, bio, city, country, timezone, upline_id, rank, volumes
-2. `leads` (21) — +priority, notes, budget, tags jsonb
-3. `lead_messages` (6)
-4. `lead_status_log` (6)
-5. `lead_channels` (5) — **переименованная старая `contacts`**, каналы связи лида
-6. `ai_jobs` (7)
-7. `templates` (16) — +title, category, channel, author, active, ai_enabled, vars, uses_count, partner_id
-8. `events_log` (8) — +actor, actor_id
+**Ядро (7):** `partners`, `leads`, `lead_messages`, `lead_channels` (переименованная старая `contacts`), `ai_jobs` (11 cols), `templates`, `events_log` (с actor whitelist)
 
-**Новые (7):**
-9. `contacts` (14) — новая «телефонная книга партнёра»
-10. `tasks` (15) — to-do
-11. `partner_settings` (18) — 1:1, AI/уведомления/quiet hours
-12. `partner_integrations` (8) — N:1, мессенджеры/интеграции
-13. `training_modules` (10)
-14. `training_lessons` (9)
-15. `training_progress` (4)
+**Партнёрские (7):** `contacts` (новая телефонная книга), `tasks` (15 cols, type/source/priority/done — **нет status**), `partner_settings` (1:1), `partner_integrations`, `training_modules`/`lessons`/`progress`
 
-**Триггеры:** `auth.users → partners`, `partners → partner_settings`. RLS own-only для всех 15.
+**Сообщения (2):** `inbound_messages` (WF5/WF6), `outbound_messages` (WF9)
+
+**AI-pipeline (3):** `lead_events` (имеет колонку `event_type`!), `ai_recommendations` (Phase B bridge с `processed_at` idempotency, добавлен 2026-05-04), `ai_job_runs` (не используется активно)
+
+**Триггеры:** `auth.users → partners`, `partners → partner_settings`, `leads INSERT → ai_jobs queued`. RLS own-only для всех 19.
+
+**Security:** все 6 SECURITY DEFINER функций закрыты от anon/authenticated миграцией `lockdown_security_definer_functions` 2026-05-04. n8n работает через `SUPABASE_SERVICE_ROLE_KEY`.
 
 ## Текущий этап
 - [x] [[Landing Page]] — live на sairateam.com
@@ -62,7 +53,22 @@ Landing (sairateam.com) → Supabase (leads) → n8n (VPS) → AI Agent → Chan
 - [x] DB-схема под все 9 вкладок (2026-04-19, 9 миграций)
 - [x] Верификация формы → Supabase leads write (end-to-end, 2026-04-19)
 - [x] Переключение вкладок на live (9/9: leads, contacts, tasks, structure, history, training, templates, settings, dashboard — E2E прогон пройден 2026-04-20)
-- [ ] AI Agent + n8n workflows
+- [x] **FTP-деплой на Hostinger** (2026-04-29): актуальные `app.js`, `api.js` (новый), 9 вкладок дашборда, `index.html` с фонами картинок. Форма пишет напрямую в Supabase (без n8n)
+- [x] **E2E прогон формы на проде** (2026-04-30): лид Вячеслав Чернобровкин — форма → leads → триггер → ai_jobs queued → виден в дашборде
+- [x] **WF3 — AI Lead Qualification** production-ready (2026-05-03):
+  - 2026-05-02: первый E2E на лиде Чернобровкин → score 75, status qualified
+  - 2026-05-03: WF3 v2 переписан на атомарный `claim_next_ai_job(p_job_type)` RPC (race window закрыт), Complete Job пишет полный AI-ответ в `ai_jobs.result` (score/temperature/next_action/summary/raw), Mark Failed единая error-branch для 5 нод записывает диагностику в result.error
+  - WF13 Watchdog (5-мин cron, `reset_stuck_ai_jobs(10)`) сбрасывает зависшие running > 10 мин в failed
+  - Smoke 2026-05-03: тест-лид (synthetic 35 y.o. female из Алматы) → score=30, temperature=cold, lead qualified — корректно отрабатывает cold-сегмент
+- [x] **Phase B — qualifier → task chain** production-ready (2026-05-04):
+  - WF3 v3: вставлена нода `65_Insert_Recommendation` → пишет в `ai_recommendations`
+  - WF4 v2: переписан на `NN_node_name` конвенцию, idempotency через `processed_at IS NULL` filter, `actor='system'` (whitelist), удалён `status:'todo'` (колонки нет)
+  - Миграция `ai_recommendations.processed_at` + partial index
+  - E2E smoke на 2 синтетических лидах: `lead → ai_jobs → ai_recommendations → tasks → events_log` цепочка работает
+  - Bag fixes WF1/2/12 events_log (`event_type → event`, `actor='system'`) deployed на VPS
+- [x] **Security lockdown** (2026-05-04): REVOKE EXECUTE FROM anon/authenticated на 6 SECURITY DEFINER функций. Advisor 16 → 3 WARN (3 intentional/Free Plan)
+- [ ] **WF1 Plan B**: переключить landing с прямого Supabase write на n8n webhook (закроет 2 RLS warns + активирует dedup/normalize)
+- [ ] Phase C — outbound + conversational + voice (planning, 12-18 сессий, см. [[AI Agent]])
 - [ ] Contact import (CSV/VCF/Google)
 
 ## Build Plan (порядок)

@@ -12,7 +12,7 @@ let currentLang = 'ru';
 
 // ===== OWNER DEFAULT REF CODE =====
 // Используется только если явно передан флаг ?owner=1
-const OWNER_REF_CODE = 'TEST001';
+const OWNER_REF_CODE = 'SAIRA001';
 
 // ===== HEADER SCROLL =====
 window.addEventListener('scroll', () => {
@@ -40,7 +40,11 @@ document.addEventListener('click', (e) => {
 // По умолчанию используется код Сайры (owner) — форма сразу доступна.
 // Если в URL ?ref=XXX — используется этот код.
 // Пользователь может вручную сменить партнёра через «Сменить код партнёра».
+history.scrollRestoration = 'manual';
+
 document.addEventListener('DOMContentLoaded', () => {
+  window.scrollTo(0, 0);
+
   const params = new URLSearchParams(window.location.search);
   const refFromUrl = params.get('ref');
   const refCode = refFromUrl || OWNER_REF_CODE;
@@ -48,7 +52,7 @@ document.addEventListener('DOMContentLoaded', () => {
   const refInput = document.getElementById('ref-code-input');
   if (refInput) refInput.value = refCode.toUpperCase();
 
-  validateRefCode(refCode);
+  validateRefCode(refCode, true);
 });
 
 // ===== SWITCH PARTNER =====
@@ -70,7 +74,7 @@ function switchPartner() {
 }
 
 // ===== VALIDATE REF CODE =====
-async function validateRefCode(code) {
+async function validateRefCode(code, fromUrl = false) {
   if (!code) code = document.getElementById('ref-code-input')?.value?.trim();
   if (!code) return;
 
@@ -100,7 +104,7 @@ async function validateRefCode(code) {
       const formSection = document.getElementById('form-section');
       if (formSection) {
         formSection.classList.add('visible');
-        formSection.scrollIntoView({ behavior: 'smooth', block: 'start' });
+        if (!fromUrl) formSection.scrollIntoView({ behavior: 'smooth', block: 'start' });
       }
       // Pre-fill ref code in form
       const formRef = document.getElementById('form-ref-code');
@@ -169,8 +173,8 @@ async function submitForm(e) {
       showModal();
       document.getElementById('lead-form')?.reset();
     } else {
-      const err = await resp.json();
-      console.error('Submit error:', err);
+      const data = await resp.json().catch(() => ({}));
+      console.error('Submit error:', data);
       alert('Ошибка отправки. Попробуйте ещё раз.');
     }
   } catch (err) {

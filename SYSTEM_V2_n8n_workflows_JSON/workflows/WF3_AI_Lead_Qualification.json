@@ -13,7 +13,7 @@
         }
       },
       "id": "6a09af7c-362c-4409-9a8e-a2c33befddcc",
-      "name": "Schedule Trigger",
+      "name": "01_Schedule_Trigger",
       "type": "n8n-nodes-base.scheduleTrigger",
       "typeVersion": 1.2,
       "position": [
@@ -23,8 +23,8 @@
     },
     {
       "parameters": {
-        "method": "GET",
-        "url": "={{$env.SUPABASE_URL + '/rest/v1/ai_jobs?select=id,partner_id,target_id,payload&status=eq.queued&job_type=eq.qualify_lead&limit=10'}}",
+        "method": "POST",
+        "url": "={{$env.SUPABASE_URL + '/rest/v1/rpc/claim_next_ai_job'}}",
         "options": {
           "response": {
             "response": {
@@ -42,12 +42,19 @@
             {
               "name": "Authorization",
               "value": "={{'Bearer ' + $env.SUPABASE_SERVICE_ROLE_KEY}}"
+            },
+            {
+              "name": "Content-Type",
+              "value": "application/json"
             }
           ]
-        }
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ {p_job_type: 'qualify_lead'} }}"
       },
       "id": "eec394cb-757e-44bb-bb83-1a61701c9560",
-      "name": "Fetch Queued Jobs",
+      "name": "10_Claim_Job",
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.2,
       "position": [
@@ -57,10 +64,10 @@
     },
     {
       "parameters": {
-        "jsCode": "return (Array.isArray($json.body) ? $json.body : []).map(j => j);"
+        "jsCode": "const job = $json.body;\nif (!job || typeof job !== 'object' || !job.id) {\n  return [];\n}\nreturn [job];"
       },
       "id": "f0be18b4-0684-48a8-9232-81fd29239cb7",
-      "name": "Split Jobs",
+      "name": "11_Process_Claim",
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
       "position": [
@@ -70,45 +77,8 @@
     },
     {
       "parameters": {
-        "method": "PATCH",
-        "url": "={{$env.SUPABASE_URL + '/rest/v1/ai_jobs?id=eq.' + $json.id}}",
-        "options": {
-          "response": {
-            "response": {
-              "fullResponse": true
-            }
-          }
-        },
-        "sendHeaders": true,
-        "headerParameters": {
-          "parameters": [
-            {
-              "name": "apikey",
-              "value": "={{$env.SUPABASE_SERVICE_ROLE_KEY}}"
-            },
-            {
-              "name": "Authorization",
-              "value": "={{'Bearer ' + $env.SUPABASE_SERVICE_ROLE_KEY}}"
-            }
-          ]
-        },
-        "sendBody": true,
-        "specifyBody": "json",
-        "jsonBody": "={{ {status:'running'} }}"
-      },
-      "id": "8e21e4c6-dd9c-483e-9765-6540e2559c80",
-      "name": "Mark Running",
-      "type": "n8n-nodes-base.httpRequest",
-      "typeVersion": 4.2,
-      "position": [
-        -420,
-        0
-      ]
-    },
-    {
-      "parameters": {
         "method": "GET",
-        "url": "={{$env.SUPABASE_URL + '/rest/v1/leads?select=*&id=eq.' + $json.target_id + '&limit=1'}}",
+        "url": "={{$env.SUPABASE_URL + '/rest/v1/leads?select=*&id=eq.' + $('11_Process_Claim').item.json.target_id + '&limit=1'}}",
         "options": {
           "response": {
             "response": {
@@ -131,26 +101,28 @@
         }
       },
       "id": "0e1554a9-7910-49c4-8cd2-f9c7df8511f3",
-      "name": "Fetch Lead",
+      "name": "20_Fetch_Lead",
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.2,
       "position": [
-        -200,
+        -420,
         0
-      ]
+      ],
+      "onError": "continueErrorOutput"
     },
     {
       "parameters": {
-        "jsCode": "const lead = Array.isArray($json.body) ? $json.body[0] : $json.body?.[0];\nconst prompt = `Ты AI qualifier SYSTEM V2. Верни JSON с keys: score, temperature, next_action, summary. Lead: ${JSON.stringify(lead)}`;\nreturn [{ job_id: $('Split Jobs').item.json.id, lead_id: lead.id, partner_id: lead.partner_id, prompt }];"
+        "jsCode": "const body = $json.body;\nconst lead = Array.isArray(body) ? body[0] : (body && body[0]);\nif (!lead) {\n  throw new Error('Lead not found for target_id=' + $('11_Process_Claim').item.json.target_id);\n}\nconst prompt = `Ты AI qualifier SYSTEM V2. Верни JSON с keys: score (0-100 int), temperature (hot|warm|cold), next_action (string), summary (string). Lead: ${JSON.stringify(lead)}`;\nreturn [{ job_id: $('11_Process_Claim').item.json.id, lead_id: lead.id, partner_id: lead.partner_id, prompt }];"
       },
       "id": "a9ab72fa-53ee-46ec-b41d-71c885eb6157",
-      "name": "Build Prompt",
+      "name": "30_Build_Prompt",
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
       "position": [
-        20,
+        -200,
         0
-      ]
+      ],
+      "onError": "continueErrorOutput"
     },
     {
       "parameters": {
@@ -181,26 +153,28 @@
         "jsonBody": "={{ {model: $env.OPENAI_MODEL || 'gpt-4.1-mini', response_format:{type:'json_object'}, messages:[{role:'system', content:'Return only valid JSON.'},{role:'user', content:$json.prompt}] } }}"
       },
       "id": "98a77da3-9458-4e42-9d07-27ef4e1b2069",
-      "name": "OpenAI Qualification",
+      "name": "40_OpenAI_Qualification",
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.2,
       "position": [
-        260,
+        20,
         0
-      ]
+      ],
+      "onError": "continueErrorOutput"
     },
     {
       "parameters": {
-        "jsCode": "const raw = $json.body?.choices?.[0]?.message?.content || '{}';\nconst parsed = JSON.parse(raw);\nreturn [{ job_id:$('Build Prompt').item.json.job_id, lead_id:$('Build Prompt').item.json.lead_id, partner_id:$('Build Prompt').item.json.partner_id, ...parsed, raw }];"
+        "jsCode": "const raw = $json.body?.choices?.[0]?.message?.content;\nif (!raw) {\n  throw new Error('OpenAI returned empty content');\n}\nlet parsed;\ntry {\n  parsed = JSON.parse(raw);\n} catch (e) {\n  throw new Error('OpenAI JSON parse failed: ' + e.message + ' | raw=' + String(raw).slice(0, 500));\n}\nreturn [{\n  job_id: $('30_Build_Prompt').item.json.job_id,\n  lead_id: $('30_Build_Prompt').item.json.lead_id,\n  partner_id: $('30_Build_Prompt').item.json.partner_id,\n  score: parsed.score,\n  temperature: parsed.temperature,\n  next_action: parsed.next_action,\n  summary: parsed.summary,\n  raw\n}];"
       },
       "id": "1231900b-ad9d-4779-b5c6-4ede3feedd17",
-      "name": "Parse AI JSON",
+      "name": "50_Parse_AI_JSON",
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
       "position": [
-        500,
+        260,
         0
-      ]
+      ],
+      "onError": "continueErrorOutput"
     },
     {
       "parameters": {
@@ -228,16 +202,17 @@
         },
         "sendBody": true,
         "specifyBody": "json",
-        "jsonBody": "={{ {score:$json.score, status:'qualified'} }}"
+        "jsonBody": "={{ {score: $json.score, status: 'qualified'} }}"
       },
       "id": "8b6e46b2-f694-4f83-967c-4ea2c13c3391",
-      "name": "Update Lead",
+      "name": "60_Update_Lead",
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.2,
       "position": [
-        740,
-        -140
-      ]
+        500,
+        0
+      ],
+      "onError": "continueErrorOutput"
     },
     {
       "parameters": {
@@ -260,26 +235,31 @@
             {
               "name": "Authorization",
               "value": "={{'Bearer ' + $env.SUPABASE_SERVICE_ROLE_KEY}}"
+            },
+            {
+              "name": "Content-Type",
+              "value": "application/json"
             }
           ]
         },
         "sendBody": true,
         "specifyBody": "json",
-        "jsonBody": "={{ {partner_id:$json.partner_id, target_type:'lead', target_id:$json.lead_id, recommendation_type:'qualification', recommendation_payload:{temperature:$json.temperature, next_action:$json.next_action, summary:$json.summary}, confidence:0.8} }}"
+        "jsonBody": "={\n  \"partner_id\": {{ JSON.stringify($('50_Parse_AI_JSON').item.json.partner_id || null) }},\n  \"target_type\": \"lead\",\n  \"target_id\": {{ JSON.stringify($('50_Parse_AI_JSON').item.json.lead_id) }},\n  \"recommendation_type\": \"qualification\",\n  \"recommendation_payload\": {\n    \"score\": {{ Number($('50_Parse_AI_JSON').item.json.score) || 0 }},\n    \"temperature\": {{ JSON.stringify($('50_Parse_AI_JSON').item.json.temperature || '') }},\n    \"next_action\": {{ JSON.stringify($('50_Parse_AI_JSON').item.json.next_action || '') }},\n    \"summary\": {{ JSON.stringify($('50_Parse_AI_JSON').item.json.summary || '') }}\n  },\n  \"confidence\": {{ (Number($('50_Parse_AI_JSON').item.json.score) || 0) / 100 }}\n}"
       },
-      "id": "46f870c2-3428-4e81-8738-db5c78f91a2b",
-      "name": "Insert Recommendation",
+      "id": "c5d18e7a-4b21-4f9a-8c3e-2a6f1b9d3e57",
+      "name": "65_Insert_Recommendation",
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.2,
       "position": [
-        740,
-        40
-      ]
+        620,
+        0
+      ],
+      "onError": "continueErrorOutput"
     },
     {
       "parameters": {
-        "method": "POST",
-        "url": "={{$env.SUPABASE_URL + '/rest/v1/ai_job_runs'}}",
+        "method": "PATCH",
+        "url": "={{$env.SUPABASE_URL + '/rest/v1/ai_jobs?id=eq.' + $('50_Parse_AI_JSON').item.json.job_id}}",
         "options": {
           "response": {
             "response": {
@@ -302,21 +282,21 @@
         },
         "sendBody": true,
         "specifyBody": "json",
-        "jsonBody": "={{ {job_id:$json.job_id, status:'succeeded', input:{lead_id:$json.lead_id}, output:{score:$json.score, temperature:$json.temperature, next_action:$json.next_action, summary:$json.summary}} }}"
+        "jsonBody": "={\n  \"status\": \"succeeded\",\n  \"result\": {\n    \"score\": {{ Number($('50_Parse_AI_JSON').item.json.score) || 0 }},\n    \"temperature\": {{ JSON.stringify($('50_Parse_AI_JSON').item.json.temperature || '') }},\n    \"next_action\": {{ JSON.stringify($('50_Parse_AI_JSON').item.json.next_action || '') }},\n    \"summary\": {{ JSON.stringify($('50_Parse_AI_JSON').item.json.summary || '') }},\n    \"raw\": {{ JSON.stringify($('50_Parse_AI_JSON').item.json.raw || '') }}\n  }\n}"
       },
-      "id": "642771fd-e84e-49ad-9fbb-bf785598e501",
-      "name": "Insert Job Run",
+      "id": "9c0c896c-6873-4cdd-b905-13e261dd1cbf",
+      "name": "70_Complete_Job",
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.2,
       "position": [
-        980,
+        860,
         0
       ]
     },
     {
       "parameters": {
         "method": "PATCH",
-        "url": "={{$env.SUPABASE_URL + '/rest/v1/ai_jobs?id=eq.' + $json.job_id}}",
+        "url": "={{$env.SUPABASE_URL + '/rest/v1/ai_jobs?id=eq.' + $('11_Process_Claim').item.json.id}}",
         "options": {
           "response": {
             "response": {
@@ -339,139 +319,154 @@
         },
         "sendBody": true,
         "specifyBody": "json",
-        "jsonBody": "={{ {status:'succeeded'} }}"
+        "jsonBody": "={\n  \"status\": \"failed\",\n  \"result\": {\n    \"error\": {{ JSON.stringify(($json.error && ($json.error.message || $json.error.description)) || (typeof $json.error === 'string' ? $json.error : 'unknown_error')) }},\n    \"failed_at\": {{ JSON.stringify(new Date().toISOString()) }}\n  }\n}"
       },
-      "id": "9c0c896c-6873-4cdd-b905-13e261dd1cbf",
-      "name": "Complete Job",
+      "id": "b1e4d2a0-9c10-4f3a-9f4d-e2a1c3d4e5f6",
+      "name": "90_Mark_Failed",
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.2,
       "position": [
-        1220,
-        0
+        500,
+        220
       ]
     }
   ],
   "connections": {
-    "Schedule Trigger": {
+    "01_Schedule_Trigger": {
       "main": [
         [
           {
-            "node": "Fetch Queued Jobs",
+            "node": "10_Claim_Job",
             "type": "main",
             "index": 0
           }
         ]
       ]
     },
-    "Fetch Queued Jobs": {
+    "10_Claim_Job": {
       "main": [
         [
           {
-            "node": "Split Jobs",
+            "node": "11_Process_Claim",
             "type": "main",
             "index": 0
           }
         ]
       ]
     },
-    "Split Jobs": {
+    "11_Process_Claim": {
       "main": [
         [
           {
-            "node": "Mark Running",
+            "node": "20_Fetch_Lead",
             "type": "main",
             "index": 0
           }
         ]
       ]
     },
-    "Mark Running": {
+    "20_Fetch_Lead": {
       "main": [
         [
           {
-            "node": "Fetch Lead",
+            "node": "30_Build_Prompt",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "90_Mark_Failed",
             "type": "main",
             "index": 0
           }
         ]
       ]
     },
-    "Fetch Lead": {
+    "30_Build_Prompt": {
       "main": [
         [
           {
-            "node": "Build Prompt",
+            "node": "40_OpenAI_Qualification",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "90_Mark_Failed",
             "type": "main",
             "index": 0
           }
         ]
       ]
     },
-    "Build Prompt": {
+    "40_OpenAI_Qualification": {
       "main": [
         [
           {
-            "node": "OpenAI Qualification",
+            "node": "50_Parse_AI_JSON",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "90_Mark_Failed",
             "type": "main",
             "index": 0
           }
         ]
       ]
     },
-    "OpenAI Qualification": {
+    "50_Parse_AI_JSON": {
       "main": [
         [
           {
-            "node": "Parse AI JSON",
+            "node": "60_Update_Lead",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "90_Mark_Failed",
             "type": "main",
             "index": 0
           }
         ]
       ]
     },
-    "Parse AI JSON": {
+    "60_Update_Lead": {
       "main": [
         [
           {
-            "node": "Update Lead",
+            "node": "65_Insert_Recommendation",
             "type": "main",
             "index": 0
-          },
+          }
+        ],
+        [
           {
-            "node": "Insert Recommendation",
+            "node": "90_Mark_Failed",
             "type": "main",
             "index": 0
           }
         ]
       ]
     },
-    "Update Lead": {
+    "65_Insert_Recommendation": {
       "main": [
         [
           {
-            "node": "Insert Job Run",
+            "node": "70_Complete_Job",
             "type": "main",
             "index": 0
           }
-        ]
-      ]
-    },
-    "Insert Recommendation": {
-      "main": [
+        ],
         [
           {
-            "node": "Insert Job Run",
-            "type": "main",
-            "index": 0
-          }
-        ]
-      ]
-    },
-    "Insert Job Run": {
-      "main": [
-        [
-          {
-            "node": "Complete Job",
+            "node": "90_Mark_Failed",
             "type": "main",
             "index": 0
           }
@@ -484,5 +479,5 @@
   "meta": {
     "template": "SYSTEM_V2_v1"
   },
-  "versionId": "a5372c4b-2d04-4d72-8c3c-8eb0d26a9f48"
+  "versionId": "wf3-v3-2026-05-04"
 }

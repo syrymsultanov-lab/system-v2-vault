@@ -51,7 +51,7 @@
         },
         "sendBody": true,
         "specifyBody": "json",
-        "jsonBody": "={{ {entity_type:'workflow', entity_id:null, event_type:'wf12_error_captured', payload:$json} }}"
+        "jsonBody": "={\n  \"entity_type\": \"workflow\",\n  \"entity_id\": null,\n  \"event\": \"wf12_error_captured\",\n  \"actor\": \"system\",\n  \"payload\": {{ JSON.stringify($json) }}\n}"
       },
       "id": "cee9f1b0-42f5-4aa3-9830-34b768883cdd",
       "name": "Insert Event Log",

@@ -15,11 +15,12 @@
       "position": [
         -900,
         0
-      ]
+      ],
+      "webhookId": "7f5e07e0-3601-4009-b57a-96b9974ad5d4"
     },
     {
       "parameters": {
-        "jsCode": "const body = $json.body ?? $json;\nconst clean = (v) => (v ?? '').toString().trim();\nconst email = clean(body.email).toLowerCase();\nconst phone = clean(body.phone).replace(/[^\\d+]/g, '');\nreturn [{\n  partner_id: clean(body.partner_id),\n  full_name: clean(body.full_name),\n  phone,\n  email,\n  source: clean(body.source) || 'landing',\n  channel: clean(body.channel) || 'web',\n  received_at: new Date().toISOString()\n}];"
+        "jsCode": "const body = $json.body ?? $json;\nconst clean = (v) => (v ?? '').toString().trim();\nconst email = clean(body.email).toLowerCase();\nconst phone = clean(body.phone).replace(/[^\\d+]/g, '');\nreturn [{\n  partner_id: clean(body.partner_id),\n  name: clean(body.name),\n  last_name: clean(body.last_name),\n  phone,\n  email,\n  country: clean(body.country),\n  city: clean(body.city),\n  messenger: clean(body.messenger),\n  messenger_handle: clean(body.messenger_handle),\n  consent: body.consent === true || body.consent === 'true',\n  consent_at: body.consent ? (body.consent_at || new Date().toISOString()) : null,\n  source: clean(body.source) || 'landing',\n  channel: clean(body.channel) || 'web',\n  received_at: new Date().toISOString()\n}];"
       },
       "id": "45841c78-65a4-418c-b73d-ac8823dcc32d",
       "name": "Normalize Input",
@@ -122,7 +123,7 @@
         },
         "sendBody": true,
         "specifyBody": "json",
-        "jsonBody": "={{ {partner_id:$json.partner_id, full_name:$json.full_name, phone:$json.phone, email:$json.email, source:$json.source, channel:$json.channel} }}"
+        "jsonBody": "={{ {partner_id:$json.partner_id, name:$json.name, last_name:$json.last_name, phone:$json.phone, email:$json.email, country:$json.country, city:$json.city, messenger:$json.messenger, messenger_handle:$json.messenger_handle, consent:$json.consent, consent_at:$json.consent_at, source:$json.source, channel:$json.channel, status:'new'} }}"
       },
       "id": "f084e58f-f193-4249-9d71-129aeb7f4e8e",
       "name": "Insert Lead",
@@ -263,7 +264,7 @@
         },
         "sendBody": true,
         "specifyBody": "json",
-        "jsonBody": "={{ {entity_type:'lead', entity_id:$json.lead_id, event_type:'wf1_lead_intake_completed', payload:{workflow:'WF1'}} }}"
+        "jsonBody": "={\n  \"entity_type\": \"lead\",\n  \"entity_id\": {{ JSON.stringify($json.lead_id) }},\n  \"event\": \"wf1_lead_intake_completed\",\n  \"actor\": \"system\",\n  \"payload\": {\"workflow\": \"WF1\"}\n}"
       },
       "id": "f77fb996-d736-4283-b2ad-b9518f52c0f0",
       "name": "Insert Event Log",

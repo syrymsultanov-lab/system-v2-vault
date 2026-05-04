@@ -159,7 +159,7 @@
         },
         "sendBody": true,
         "specifyBody": "json",
-        "jsonBody": "={{ {entity_type:'lead', entity_id:$json.lead_id, event_type:'wf2_duplicate_flagged', payload:{duplicate_of:$json.duplicate_of}} }}"
+        "jsonBody": "={\n  \"entity_type\": \"lead\",\n  \"entity_id\": {{ JSON.stringify($json.lead_id) }},\n  \"event\": \"wf2_duplicate_flagged\",\n  \"actor\": \"system\",\n  \"payload\": {\"duplicate_of\": {{ JSON.stringify($json.duplicate_of) }}}\n}"
       },
       "id": "2e47137c-31e7-439a-b151-5a53f08295bb",
       "name": "Log Dedup",
