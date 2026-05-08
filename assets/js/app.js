@@ -5,6 +5,7 @@
 
 const SUPABASE_URL = 'https://njwraxmlzglmofxiwmxs.supabase.co';
 const SUPABASE_ANON_KEY = 'sb_publishable_iATLaUgVdGL6VjuBLQhKDw_UgxxfQcs';
+const LEAD_INTAKE_WEBHOOK_URL = 'https://n8n.sairateam.com/webhook/system-v2/lead-intake';
 
 let validatedPartnerId = null;
 let validatedRefCode = null;
@@ -152,20 +153,15 @@ async function submitForm(e) {
     messenger_handle: document.getElementById('f-messenger-handle')?.value?.trim() || null,
     partner_id: validatedPartnerId || null,
     source: 'landing',
-    status: 'new',
+    channel: 'web',
     consent,
     consent_at: consent ? new Date().toISOString() : null
   };
 
   try {
-    const resp = await fetch(`${SUPABASE_URL}/rest/v1/leads`, {
+    const resp = await fetch(LEAD_INTAKE_WEBHOOK_URL, {
       method: 'POST',
-      headers: {
-        'apikey': SUPABASE_ANON_KEY,
-        'Authorization': `Bearer ${SUPABASE_ANON_KEY}`,
-        'Content-Type': 'application/json',
-        'Prefer': 'return=minimal'
-      },
+      headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(formData)
     });
 

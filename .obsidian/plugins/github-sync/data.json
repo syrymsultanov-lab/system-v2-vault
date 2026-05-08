@@ -1,0 +1,9 @@
+{
+  "remoteURL": "https://github.com/syrymsultanov-lab/system-v2-vault",
+  "gitLocation": "",
+  "syncinterval": 0,
+  "isSyncOnLoad": true,
+  "checkStatusOnLoad": true,
+  "noticeLevel": "WARNING",
+  "showSyncSuccessNotice": true
+}

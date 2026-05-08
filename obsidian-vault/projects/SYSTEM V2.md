@@ -8,7 +8,7 @@ hosting: hostinger
 domain: sairateam.com
 stack: static HTML/CSS/JS
 created: 2025-11-01
-updated: 2026-05-04
+updated: 2026-05-06
 ---
 
 # SYSTEM V2.1 — AI-Powered MLM Pipeline
@@ -67,9 +67,11 @@ Landing (sairateam.com) → Supabase (leads) → n8n (VPS) → AI Agent → Chan
   - E2E smoke на 2 синтетических лидах: `lead → ai_jobs → ai_recommendations → tasks → events_log` цепочка работает
   - Bag fixes WF1/2/12 events_log (`event_type → event`, `actor='system'`) deployed на VPS
 - [x] **Security lockdown** (2026-05-04): REVOKE EXECUTE FROM anon/authenticated на 6 SECURITY DEFINER функций. Advisor 16 → 3 WARN (3 intentional/Free Plan)
-- [ ] **WF1 Plan B**: переключить landing с прямого Supabase write на n8n webhook (закроет 2 RLS warns + активирует dedup/normalize)
+- [x] **WF1 Plan B switchover** (2026-05-05): landing `app.js` теперь POST на `/webhook/system-v2/lead-intake`. WF1 интейк-канал работает: Normalize → dedup check → Insert Lead → lead_events → events_log → respond. Queue AI Job нода удалена (dedup триггер). E2E через webhook curl PASS. WF5 webhookId UUID assigned (был null → 404).
+- [x] **WF7 удалён** (2026-05-06): конвертация lead→contact отменена. Decision: лид навсегда остаётся лидом. Будущая фича — обратное направление (contact → lead) когда партнёр инициирует презентацию для существующего контакта
 - [ ] Phase C — outbound + conversational + voice (planning, 12-18 сессий, см. [[AI Agent]])
 - [ ] Contact import (CSV/VCF/Google)
+- [ ] **Future:** contact → lead path (когда партнёр запускает презентацию для контакта из телефонной книги, нужен workflow для создания связанного лида)
 
 ## Build Plan (порядок)
 1. Финализировать CLAUDE.md

@@ -39,7 +39,7 @@ SYSTEM V2.1 — AI-powered lead pipeline для MLM команды InCruises (25
 - `outbound_messages` (9) — исходящие: partner_id, channel, to_address, body, status (draft/approved/sent/failed), sent_at. WF9 читает approved и отправляет
 
 **AI-pipeline (3, обнаружены 2026-05-04 — раньше не в списке):**
-- `lead_events` (6) — `lead_id, partner_id, event_type, payload, created_at`. **Имеет `event_type` колонку** (в отличие от events_log с `event`!). Журнал событий лидов. WF1/WF2/WF7 пишут.
+- `lead_events` (6) — `lead_id, partner_id, event_type, payload, created_at`. **Имеет `event_type` колонку** (в отличие от events_log с `event`!). Журнал событий лидов. WF1/WF2 пишут.
 - `ai_recommendations` (9) — `partner_id, target_type, target_id, recommendation_type, recommendation_payload jsonb, confidence numeric, processed_at, created_at`. Bridge между qualifier (WF3) и task creator (WF4). Idempotency через `processed_at IS NULL` filter.
 - `ai_job_runs` (6) — `job_id, status, input, output, created_at`. Лог прогонов задач. Не используется активно.
 
@@ -48,9 +48,12 @@ SYSTEM V2.1 — AI-powered lead pipeline для MLM команды InCruises (25
 - `partners INSERT → partner_settings` (дефолты создаются автоматом)
 - `leads INSERT → ai_jobs queued` (qualify_lead — WF3 cron подхватывает)
 
-## AI-pipeline (Phase B production 2026-05-04)
+## AI-pipeline (Phase B production 2026-05-04, Plan B intake 2026-05-05)
 ```
-landing form → leads INSERT → (триггер) → ai_jobs queued
+landing form (app.js POST) → WF1 webhook /system-v2/lead-intake →
+  Normalize → Find Existing → If dup? Use Existing : Insert Lead →
+  Extract Lead Id → lead_events INSERT → events_log INSERT → respond {ok:true}
+  (триггер create_qualification_job создаёт ai_jobs queued автоматически)
 WF3 cron 2 мин:  claim_next_ai_job RPC → OpenAI → score+temp+next_action+summary
                  → leads.status=qualified+score → ai_recommendations row → ai_jobs.succeeded
 WF4 cron 2 мин:  fetch ai_recommendations[processed_at=null] → tasks INSERT → mark processed
@@ -82,13 +85,11 @@ npx http-server . -p 3000
 # НЕ через file:// (CORS)
 ```
 
-## TODO для следующей сессии (Plan B WF1)
-Сейчас лендинг пишет в Supabase напрямую, WF1 webhook не вызывается. Решение 2026-05-04: переключить лендинг на WF1 webhook → активировать dedup + normalization + audit.
-1. WF1 — убрать ноду `Queue AI Job` (триггер уже создаёт job)
-2. `assets/js/app.js` — POST на `https://n8n.sairateam.com/webhook/system-v2/lead-intake` вместо прямого Supabase
-3. Deploy WF1 + FTP лендинг → E2E через `https://sairateam.com/?ref=SAIRA001`
-4. Обновить эту секцию (Phase B диаграмма + WF1 как канал интейка)
-Деталях см. `memory/project_wf1_plan_b_pending.md`.
+## TODO для следующей сессии
+- Notify-WF Phase 1 (TG) — **parked 2026-05-06 после setup**: bot `@incruises_ai_bot` + group `AI&Incruises` (chat_id `-5110729354`) готовы, локальный `.env` заполнен. Осталось: VPS env + WF4 patch + redeploy + E2E. См. `projects/Notify Workflows.md`
+- `git push origin main` — локально несколько коммитов впереди
+- Hostinger токен ротация (засветлён в чате 2026-05-02)
+- Phase C decisions (6 вопросов из `AI Agent.md`: канал MVP, KB-источник, Identity, Voice platform, бюджет, consent)
 
 ## Build Plan (порядок)
 1. ✅ Финализировать CLAUDE.md

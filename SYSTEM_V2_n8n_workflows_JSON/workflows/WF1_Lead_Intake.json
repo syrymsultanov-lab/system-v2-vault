@@ -123,7 +123,7 @@
         },
         "sendBody": true,
         "specifyBody": "json",
-        "jsonBody": "={{ {partner_id:$json.partner_id, name:$json.name, last_name:$json.last_name, phone:$json.phone, email:$json.email, country:$json.country, city:$json.city, messenger:$json.messenger, messenger_handle:$json.messenger_handle, consent:$json.consent, consent_at:$json.consent_at, source:$json.source, channel:$json.channel, status:'new'} }}"
+        "jsonBody": "={{ (() => { const n = $('Normalize Input').item.json; return {partner_id:n.partner_id, name:n.name, last_name:n.last_name, phone:n.phone, email:n.email, country:n.country, city:n.city, messenger:n.messenger, messenger_handle:n.messenger_handle, consent:n.consent, consent_at:n.consent_at, source:n.source, status:'new'}; })() }}"
       },
       "id": "f084e58f-f193-4249-9d71-129aeb7f4e8e",
       "name": "Insert Lead",
@@ -186,7 +186,7 @@
         },
         "sendBody": true,
         "specifyBody": "json",
-        "jsonBody": "={{ {lead_id:$json.lead_id, partner_id:$json.partner_id, event_type:'lead_created', payload:{mode:$json.mode}} }}"
+        "jsonBody": "={\n  \"lead_id\": {{ JSON.stringify($json.lead_id) }},\n  \"partner_id\": {{ JSON.stringify($json.partner_id) }},\n  \"event_type\": \"lead_created\",\n  \"payload\": {\"mode\": {{ JSON.stringify($json.mode) }}}\n}"
       },
       "id": "8a0e8757-4fe8-4c74-b836-3fee1645f545",
       "name": "Insert Lead Event",
@@ -194,47 +194,6 @@
       "typeVersion": 4.2,
       "position": [
         540,
-        0
-      ]
-    },
-    {
-      "parameters": {
-        "method": "POST",
-        "url": "={{$env.SUPABASE_URL + '/rest/v1/ai_jobs'}}",
-        "options": {
-          "response": {
-            "response": {
-              "fullResponse": true
-            }
-          }
-        },
-        "sendHeaders": true,
-        "headerParameters": {
-          "parameters": [
-            {
-              "name": "apikey",
-              "value": "={{$env.SUPABASE_SERVICE_ROLE_KEY}}"
-            },
-            {
-              "name": "Authorization",
-              "value": "={{'Bearer ' + $env.SUPABASE_SERVICE_ROLE_KEY}}"
-            },
-            {
-              "name": "Prefer",
-              "value": "return=representation"
-            }
-          ]
-        },
-        "sendBody": true,
-        "specifyBody": "json",
-        "jsonBody": "={{ {partner_id:$json.partner_id, job_type:'qualify_lead', target_type:'lead', target_id:$json.lead_id, status:'queued', payload:{source:'WF1'}} }}"
-      },
-      "id": "4a94fe8b-c54f-42e2-9bf2-89af6cdc9afe",
-      "name": "Queue AI Job",
-      "type": "n8n-nodes-base.httpRequest",
-      "typeVersion": 4.2,
-      "position": [
-        780,
         0
       ]
     },
@@ -264,7 +223,7 @@
         },
         "sendBody": true,
         "specifyBody": "json",
-        "jsonBody": "={\n  \"entity_type\": \"lead\",\n  \"entity_id\": {{ JSON.stringify($json.lead_id) }},\n  \"event\": \"wf1_lead_intake_completed\",\n  \"actor\": \"system\",\n  \"payload\": {\"workflow\": \"WF1\"}\n}"
+        "jsonBody": "={\n  \"entity_type\": \"lead\",\n  \"entity_id\": {{ JSON.stringify(($('Extract Lead Id').isExecuted ? $('Extract Lead Id') : $('Use Existing Lead')).item.json.lead_id) }},\n  \"event\": \"wf1_lead_intake_completed\",\n  \"actor\": \"system\",\n  \"payload\": {\"workflow\": \"WF1\"}\n}"
       },
       "id": "f77fb996-d736-4283-b2ad-b9518f52c0f0",
       "name": "Insert Event Log",
@@ -377,17 +336,6 @@
       ]
     },
     "Insert Lead Event": {
-      "main": [
-        [
-          {
-            "node": "Queue AI Job",
-            "type": "main",
-            "index": 0
-          }
-        ]
-      ]
-    },
-    "Queue AI Job": {
       "main": [
         [
           {

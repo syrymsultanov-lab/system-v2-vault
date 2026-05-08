@@ -102,7 +102,7 @@ def deploy(json_path: Path, existing: dict) -> str | None:
 WF_DIR = Path(__file__).parent.parent / "SYSTEM_V2_n8n_workflows_JSON" / "workflows"
 
 # WF3 already deployed; WF8/WF10/WF11 need missing tables — skipped for now
-DEPLOY_ORDER = ["WF1", "WF2", "WF4", "WF5", "WF6", "WF7", "WF9", "WF12"]
+DEPLOY_ORDER = ["WF1", "WF2", "WF4", "WF5", "WF6", "WF9", "WF12"]
 
 prefixes = sys.argv[1:] if len(sys.argv) > 1 else DEPLOY_ORDER
 existing = get_existing()
