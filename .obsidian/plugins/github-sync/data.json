@@ -5,5 +5,5 @@
   "isSyncOnLoad": true,
   "checkStatusOnLoad": true,
   "noticeLevel": "WARNING",
-  "showSyncSuccessNotice": true
+  "showSyncSuccessNotice": false
 }
