@@ -170,6 +170,8 @@
   },
   "left-ribbon": {
     "hiddenItems": {
+      "markdown-importer:Импорт Markdown-файлов": false,
+      "github-sync:Sync with Remote": false,
       "switcher:Меню быстрого перехода": false,
       "graph:Граф": false,
       "canvas:Создать новый холст": false,

@@ -1,0 +1,80 @@
+{
+  "topics": [
+    {
+      "id": "cruises",
+      "name_ru": "Круизы",
+      "priority": 1,
+      "keywords_en": [
+        "cruise review 2025",
+        "luxury cruise ship tour",
+        "cruise vlog",
+        "cruise ship review",
+        "best cruise lines",
+        "cruise experience",
+        "cruise travel tips"
+      ],
+      "keywords_ru": [
+        "круиз отзыв",
+        "круизный лайнер обзор",
+        "путешествие на лайнере",
+        "круиз впечатления"
+      ]
+    },
+    {
+      "id": "incruises",
+      "name_ru": "InCruises",
+      "priority": 1,
+      "keywords_en": [
+        "InCruises review",
+        "InCruises membership",
+        "InCruises travel club",
+        "InCruises partner"
+      ],
+      "keywords_ru": [
+        "InCruises отзыв",
+        "InCruises бизнес",
+        "InCruises партнер"
+      ]
+    },
+    {
+      "id": "luxury_travel",
+      "name_ru": "Люксовые путешествия",
+      "priority": 2,
+      "keywords_en": [
+        "luxury hotel review",
+        "5 star hotel tour",
+        "luxury resort review",
+        "luxury travel vlog",
+        "best hotels in the world"
+      ],
+      "keywords_ru": [
+        "люкс отель обзор",
+        "отдых в 5 звезд",
+        "роскошный отель"
+      ]
+    },
+    {
+      "id": "travel_lifestyle",
+      "name_ru": "Travel-лайфстайл",
+      "priority": 3,
+      "keywords_en": [
+        "travel lifestyle",
+        "digital nomad travel",
+        "passive income travel",
+        "travel business opportunity"
+      ],
+      "keywords_ru": [
+        "путешествия образ жизни",
+        "пассивный доход путешествия",
+        "бизнес в путешествиях"
+      ]
+    }
+  ],
+  "blacklist_keywords": [
+    "carnival cruise complaint",
+    "cruise accident",
+    "cruise sinking",
+    "hotel scandal"
+  ],
+  "minimum_relevance_score": 0.7
+}

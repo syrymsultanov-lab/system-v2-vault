@@ -1,0 +1,60 @@
+{
+  "platforms": {
+    "instagram": {
+      "enabled": true,
+      "priority": 1,
+      "max_posts_per_day": 3,
+      "min_hours_between_posts": 3,
+      "post_times_utc5": ["09:00", "14:00", "19:00"],
+      "caption_max_chars": 2200,
+      "caption_target_chars": 300,
+      "hashtags_count": 20,
+      "supports_video_upload": false,
+      "strategy": "thumbnail_image_with_link_in_bio",
+      "api": {
+        "base_url": "https://graph.facebook.com/v19.0",
+        "env_token": "INSTAGRAM_ACCESS_TOKEN",
+        "env_account_id": "INSTAGRAM_BUSINESS_ACCOUNT_ID"
+      }
+    },
+    "youtube": {
+      "enabled": true,
+      "priority": 2,
+      "max_posts_per_day": 2,
+      "min_hours_between_posts": 4,
+      "post_times_utc5": ["10:00", "17:00"],
+      "caption_max_chars": 5000,
+      "caption_target_chars": 600,
+      "hashtags_count": 10,
+      "supports_community_posts": true,
+      "min_subscribers_for_community": 500,
+      "strategy": "community_post_with_link",
+      "api": {
+        "base_url": "https://www.googleapis.com/youtube/v3",
+        "env_client_id": "YOUTUBE_CLIENT_ID",
+        "env_client_secret": "YOUTUBE_CLIENT_SECRET",
+        "env_refresh_token": "YOUTUBE_REFRESH_TOKEN"
+      }
+    },
+    "telegram": {
+      "enabled": false,
+      "note": "Запланировано в v2 — добавить после запуска Instagram + YouTube"
+    },
+    "facebook": {
+      "enabled": false,
+      "note": "Запланировано в v2 — добавить после запуска Instagram + YouTube"
+    }
+  },
+  "timezone": "Asia/Aqtobe",
+  "timezone_offset_hours": 5,
+  "forbidden_words": [
+    "невероятный",
+    "потрясающий",
+    "уникальный",
+    "шикарный",
+    "невероятно",
+    "кликай",
+    "жми",
+    "срочно"
+  ]
+}
