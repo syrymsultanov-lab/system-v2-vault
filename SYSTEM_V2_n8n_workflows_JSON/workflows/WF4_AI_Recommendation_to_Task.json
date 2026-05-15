@@ -190,6 +190,40 @@
         300,
         0
       ]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "={{'https://api.telegram.org/bot' + $env.TG_BOT_TOKEN + '/sendMessage'}}",
+        "options": {
+          "response": {
+            "response": {
+              "fullResponse": true
+            }
+          }
+        },
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Content-Type",
+              "value": "application/json"
+            }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={\n  \"chat_id\": {{ JSON.stringify($env.TG_GROUP_CHAT_ID) }},\n  \"text\": {{ JSON.stringify('🎯 Новая задача от AI\\n' + $('20_Map_Recs').item.json.title + '\\nlead_id: ' + $('20_Map_Recs').item.json.lead_id) }}\n}"
+      },
+      "id": "a1b2c3d4-e5f6-7890-abcd-ef1234567890",
+      "name": "60_Notify_TG_Group",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        520,
+        0
+      ],
+      "continueOnFail": true
     }
   ],
   "connections": {
@@ -247,6 +281,17 @@
           }
         ]
       ]
+    },
+    "50_Log_Event": {
+      "main": [
+        [
+          {
+            "node": "60_Notify_TG_Group",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
     }
   },
   "active": false,
@@ -254,5 +299,5 @@
   "meta": {
     "template": "SYSTEM_V2_v1"
   },
-  "versionId": "wf4-v2-2026-05-04"
+  "versionId": "wf4-v3-2026-05-15-notify-tg"
 }

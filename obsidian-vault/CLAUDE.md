@@ -86,10 +86,11 @@ npx http-server . -p 3000
 ```
 
 ## TODO для следующей сессии
-- Notify-WF Phase 1 (TG) — **parked 2026-05-06 после setup**: bot `@incruises_ai_bot` + group `AI&Incruises` (chat_id `-5110729354`) готовы, локальный `.env` заполнен. Осталось: VPS env + WF4 patch + redeploy + E2E. См. `projects/Notify Workflows.md`
-- `git push origin main` — локально несколько коммитов впереди
+- **Notify-WF Phase 1** ✅ DONE 2026-05-15 (WF4 шлёт в TG group, msg_id=27 smoke PASS). Phase 2 (email weekly digest) — backend не выбран
+- `git push origin main` — локально несколько коммитов впереди (растёт)
 - Hostinger токен ротация (засветлён в чате 2026-05-02)
-- Phase C decisions (6 вопросов из `AI Agent.md`: канал MVP, KB-источник, Identity, Voice platform, бюджет, consent)
+- **Phase C unblock** — ответить на `obsidian-vault/projects/AI Agent Questionnaire.md` (17 разделов A-R, ждут с 2026-04-25). Отдельная сессия 1-2 часа
+- CLAUDE.md гигиена через `obsidian-vault/PROMT_CLEAN_CLAUDE_WEEKLE.md` (еженедельная чистка)
 
 ## Build Plan (порядок)
 1. ✅ Финализировать CLAUDE.md
