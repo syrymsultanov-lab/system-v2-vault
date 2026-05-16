@@ -2,6 +2,20 @@
 
 ---
 
+> **REVIEW NOTE (2026-05-16, Claude Code):**
+> Документ = снапшот рекомендаций Claude Chat (примерно 2026-05-06, до Phase B production). Сохраняется как исторический. Решения по пунктам ниже:
+>
+> | Рекомендация | Статус | Причина |
+> |---|---|---|
+> | Шаг A: `audit_log` | **REJECTED** | Дубль `events_log` (с whitelist actor `me\|ai\|system\|partner\|lead\|anon`). `events_log` уже единственный журнал событий. Не создавать |
+> | Шаг A: `partner_consents` | **DEFERRED → columns approach** | Per AI Agent Questionnaire H4 (ждёт ответов Сырыма): consent-флаги как колонки в `contacts` (ai_consent, consent_at, consent_source), не отдельная таблица. Экономия на 25-table лимите. Реализация после Questionnaire |
+> | Шаг B: `ai_jobs` очередь | **DONE** | Phase A/B production 2026-05-04. `claim_next_ai_job` RPC, job_types: qualify_lead. send_message/answer_question/schedule_followup — пока не нужны (Phase C scope) |
+> | Шаг C: pgvector + `knowledge_chunks` | **DEFERRED → Phase C5** | Per AI Agent.md C5 (RAG). 2-3 сессии. Триггер — ответы на Questionnaire + InCruises Knowledge Base ingestion |
+>
+> **Lead/contact directionality:** документ не противоречит — он не упоминает lead↔contact, только compliance. См. `obsidian-vault/reference/Business Rules.md` правила 1-2 для актуального.
+
+---
+
 ## Что это значит для нашего разговора
 
 Я по-прежнему не вижу код проекта (лендинг, дашборд, n8n). Они либо в другом репозитории, либо локально на твоей машине без публикации в git.
