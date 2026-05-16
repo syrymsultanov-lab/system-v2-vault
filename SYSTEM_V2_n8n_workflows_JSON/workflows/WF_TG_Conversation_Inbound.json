@@ -1,0 +1,203 @@
+{
+  "name": "TG Conversation Inbound",
+  "settings": { "callerPolicy": "workflowsFromSameOwner", "executionOrder": "v1" },
+  "nodes": [
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "tg-inbound",
+        "responseMode": "onReceived",
+        "responseCode": 200,
+        "options": {}
+      },
+      "id": "wh-tg",
+      "name": "01_Webhook",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2,
+      "position": [-1300, 0],
+      "webhookId": "1f1e5ce5-157d-4749-aa90-1d1f6a5cf95c"
+    },
+    {
+      "parameters": {
+        "jsCode": "const update = $json.body || $json;\nconst msg = update.message || update.edited_message || update.channel_post;\nif (!msg) return [{ json: { valid: false, reason: 'no_message' } }];\nconst from = msg.from || {};\nconst chat = msg.chat || {};\nconst text = msg.text || msg.caption || '';\nconst hasMedia = !!(msg.photo || msg.voice || msg.audio || msg.video || msg.document || msg.sticker);\nconst username = from.username ? '@' + from.username : null;\n\n// Detect /start <uuid> deep-link payload\nconst SENTINEL_UUID = '00000000-0000-0000-0000-000000000000';\nconst startMatch = text.match(/^\\/start\\s+([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12})\\b/);\nconst start_payload = startMatch ? startMatch[1] : SENTINEL_UUID;\n\nreturn [{ json: {\n  valid: true,\n  message_id: msg.message_id,\n  date: msg.date,\n  from_id: from.id,\n  from_username: from.username || null,\n  from_handle: username,\n  chat_id: chat.id,\n  chat_type: chat.type,\n  text: text,\n  has_media: hasMedia,\n  start_payload: start_payload,\n  is_start: !!startMatch\n}}];"
+      },
+      "id": "parse-update",
+      "name": "10_Parse_Update",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [-1080, 0]
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": { "caseSensitive": true, "leftValue": "", "typeValidation": "loose" },
+          "conditions": [{
+            "id": "is-valid",
+            "leftValue": "={{ $json.valid ? 'yes' : 'no' }}",
+            "rightValue": "yes",
+            "operator": { "type": "string", "operation": "equals" }
+          }],
+          "combinator": "and"
+        }
+      },
+      "id": "if-valid",
+      "name": "15_If_Valid",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [-860, 0]
+    },
+    {
+      "parameters": {
+        "method": "PATCH",
+        "url": "={{ $env.SUPABASE_URL + '/rest/v1/contacts?id=eq.' + $json.start_payload + '&ai_consent=eq.true&tg_chat_id=is.null' }}",
+        "options": { "response": { "response": { "fullResponse": true } } },
+        "sendHeaders": true,
+        "headerParameters": { "parameters": [
+          { "name": "apikey", "value": "={{ $env.SUPABASE_SERVICE_ROLE_KEY }}" },
+          { "name": "Authorization", "value": "={{ 'Bearer ' + $env.SUPABASE_SERVICE_ROLE_KEY }}" },
+          { "name": "Content-Type", "value": "application/json" }
+        ] },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ JSON.stringify({ tg_chat_id: $json.chat_id }) }}"
+      },
+      "id": "claim-chatid",
+      "name": "18_Claim_ChatId",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [-640, 0],
+      "continueOnFail": true
+    },
+    {
+      "parameters": {
+        "method": "GET",
+        "url": "={{ $env.SUPABASE_URL + '/rest/v1/contacts?select=id,partner_id,name,messenger,messenger_handle,ai_consent,do_not_contact,tg_chat_id&tg_chat_id=eq.' + $('10_Parse_Update').item.json.chat_id + '&limit=1' }}",
+        "options": { "response": { "response": { "fullResponse": true } } },
+        "sendHeaders": true,
+        "headerParameters": { "parameters": [
+          { "name": "apikey", "value": "={{ $env.SUPABASE_SERVICE_ROLE_KEY }}" },
+          { "name": "Authorization", "value": "={{ 'Bearer ' + $env.SUPABASE_SERVICE_ROLE_KEY }}" }
+        ] }
+      },
+      "id": "find-contact",
+      "name": "20_Find_Contact",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [-420, 0]
+    },
+    {
+      "parameters": {
+        "jsCode": "const list = $json.body || [];\nconst contact = list[0] || null;\nconst parsed = $('10_Parse_Update').item.json;\nconst allowed = !!(contact && contact.ai_consent === true && contact.do_not_contact === false);\nreturn [{ json: {\n  contact_found: !!contact,\n  contact: contact,\n  allowed: allowed,\n  parsed: parsed\n}}];"
+      },
+      "id": "check-contact",
+      "name": "25_Check_Contact",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [-200, 0]
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": { "caseSensitive": true, "leftValue": "", "typeValidation": "loose" },
+          "conditions": [{
+            "id": "allowed",
+            "leftValue": "={{ $json.allowed ? 'yes' : 'no' }}",
+            "rightValue": "yes",
+            "operator": { "type": "string", "operation": "equals" }
+          }],
+          "combinator": "and"
+        }
+      },
+      "id": "if-allowed",
+      "name": "30_If_Allowed",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [20, 0]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "={{ $env.SUPABASE_URL + '/rest/v1/inbound_messages' }}",
+        "options": { "response": { "response": { "fullResponse": true } } },
+        "sendHeaders": true,
+        "headerParameters": { "parameters": [
+          { "name": "apikey", "value": "={{ $env.SUPABASE_SERVICE_ROLE_KEY }}" },
+          { "name": "Authorization", "value": "={{ 'Bearer ' + $env.SUPABASE_SERVICE_ROLE_KEY }}" },
+          { "name": "Content-Type", "value": "application/json" },
+          { "name": "Prefer", "value": "return=representation" }
+        ] },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ JSON.stringify({ partner_id: $json.contact.partner_id, channel: 'telegram', external_message_id: String($json.parsed.message_id), from_address: ($json.parsed.from_handle || String($json.parsed.from_id)), to_address: null, body: $json.parsed.text || ($json.parsed.has_media ? '[media]' : ''), direction: 'inbound' }) }}"
+      },
+      "id": "insert-inbound",
+      "name": "40_Insert_Inbound",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [240, -120]
+    },
+    {
+      "parameters": {
+        "method": "PATCH",
+        "url": "={{ $env.SUPABASE_URL + '/rest/v1/contacts?id=eq.' + $('25_Check_Contact').item.json.contact.id }}",
+        "options": { "response": { "response": { "fullResponse": true } } },
+        "sendHeaders": true,
+        "headerParameters": { "parameters": [
+          { "name": "apikey", "value": "={{ $env.SUPABASE_SERVICE_ROLE_KEY }}" },
+          { "name": "Authorization", "value": "={{ 'Bearer ' + $env.SUPABASE_SERVICE_ROLE_KEY }}" },
+          { "name": "Content-Type", "value": "application/json" }
+        ] },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ JSON.stringify({ last_inbound_at: new Date().toISOString() }) }}"
+      },
+      "id": "touch-contact",
+      "name": "50_Touch_Contact",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [460, -120]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "={{ $env.SUPABASE_URL + '/rest/v1/events_log' }}",
+        "options": { "response": { "response": { "fullResponse": true } } },
+        "sendHeaders": true,
+        "headerParameters": { "parameters": [
+          { "name": "apikey", "value": "={{ $env.SUPABASE_SERVICE_ROLE_KEY }}" },
+          { "name": "Authorization", "value": "={{ 'Bearer ' + $env.SUPABASE_SERVICE_ROLE_KEY }}" },
+          { "name": "Content-Type", "value": "application/json" }
+        ] },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ JSON.stringify({ partner_id: ($json.contact && $json.contact.partner_id) || null, actor: 'lead', event: ($json.contact_found ? 'tg_inbound_blocked' : 'tg_inbound_unknown_sender'), payload: { from_handle: $json.parsed.from_handle, from_id: $json.parsed.from_id, chat_id: $json.parsed.chat_id, text: $json.parsed.text, has_media: $json.parsed.has_media, is_start: $json.parsed.is_start, start_payload: $json.parsed.start_payload, contact_found: $json.contact_found, allowed: $json.allowed } }) }}"
+      },
+      "id": "log-unhandled",
+      "name": "35_Log_Unhandled",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [240, 120],
+      "continueOnFail": true
+    }
+  ],
+  "connections": {
+    "01_Webhook":       { "main": [[{ "node": "10_Parse_Update", "type": "main", "index": 0 }]] },
+    "10_Parse_Update":  { "main": [[{ "node": "15_If_Valid",     "type": "main", "index": 0 }]] },
+    "15_If_Valid": {
+      "main": [
+        [{ "node": "18_Claim_ChatId", "type": "main", "index": 0 }],
+        []
+      ]
+    },
+    "18_Claim_ChatId":  { "main": [[{ "node": "20_Find_Contact",  "type": "main", "index": 0 }]] },
+    "20_Find_Contact":  { "main": [[{ "node": "25_Check_Contact", "type": "main", "index": 0 }]] },
+    "25_Check_Contact": { "main": [[{ "node": "30_If_Allowed",    "type": "main", "index": 0 }]] },
+    "30_If_Allowed": {
+      "main": [
+        [{ "node": "40_Insert_Inbound", "type": "main", "index": 0 }],
+        [{ "node": "35_Log_Unhandled",  "type": "main", "index": 0 }]
+      ]
+    },
+    "40_Insert_Inbound": { "main": [[{ "node": "50_Touch_Contact", "type": "main", "index": 0 }]] }
+  }
+}
