@@ -30,3 +30,6 @@ desktop.ini
 # IDE
 .vscode/
 .idea/
+
+# Obsidian volatile state
+.obsidian/workspace.json
