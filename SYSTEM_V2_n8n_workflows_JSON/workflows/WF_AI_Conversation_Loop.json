@@ -1,0 +1,318 @@
+{
+  "name": "AI Conversation Loop",
+  "active": false,
+  "settings": { "callerPolicy": "workflowsFromSameOwner", "executionOrder": "v1" },
+  "nodes": [
+    {
+      "parameters": { "rule": { "interval": [{ "field": "minutes", "minutesInterval": 1 }] } },
+      "id": "trg-cron",
+      "name": "01_Schedule_Trigger",
+      "type": "n8n-nodes-base.scheduleTrigger",
+      "typeVersion": 1.2,
+      "position": [-1200, 0]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "={{ $env.SUPABASE_URL + '/rest/v1/rpc/claim_next_conversation' }}",
+        "options": { "response": { "response": { "fullResponse": true } } },
+        "sendHeaders": true,
+        "headerParameters": { "parameters": [
+          { "name": "apikey", "value": "={{ $env.SUPABASE_SERVICE_ROLE_KEY }}" },
+          { "name": "Authorization", "value": "={{ 'Bearer ' + $env.SUPABASE_SERVICE_ROLE_KEY }}" },
+          { "name": "Content-Type", "value": "application/json" }
+        ] },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ JSON.stringify({}) }}"
+      },
+      "id": "claim-contact",
+      "name": "10_Claim_Contact",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [-980, 0]
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": { "caseSensitive": true, "leftValue": "", "typeValidation": "loose" },
+          "conditions": [{
+            "id": "has-contact",
+            "leftValue": "={{ ($json.body || []).length }}",
+            "rightValue": 0,
+            "operator": { "type": "number", "operation": "gt" }
+          }],
+          "combinator": "and"
+        }
+      },
+      "id": "if-found",
+      "name": "15_If_Found",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [-760, 0]
+    },
+    {
+      "parameters": {
+        "method": "GET",
+        "url": "={{ $env.SUPABASE_URL + '/rest/v1/partners?select=id,name,referral_url&id=eq.' + $('10_Claim_Contact').item.json.body[0].partner_id }}",
+        "options": { "response": { "response": { "fullResponse": true } } },
+        "sendHeaders": true,
+        "headerParameters": { "parameters": [
+          { "name": "apikey", "value": "={{ $env.SUPABASE_SERVICE_ROLE_KEY }}" },
+          { "name": "Authorization", "value": "={{ 'Bearer ' + $env.SUPABASE_SERVICE_ROLE_KEY }}" }
+        ] }
+      },
+      "id": "fetch-partner",
+      "name": "20_Fetch_Partner",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [-540, -120]
+    },
+    {
+      "parameters": {
+        "method": "GET",
+        "url": "={{ $env.SUPABASE_URL + '/rest/v1/partner_settings?select=ai_assistant_name,ai_tone,ai_language,quiet_from,quiet_to&partner_id=eq.' + $('10_Claim_Contact').item.json.body[0].partner_id }}",
+        "options": { "response": { "response": { "fullResponse": true } } },
+        "sendHeaders": true,
+        "headerParameters": { "parameters": [
+          { "name": "apikey", "value": "={{ $env.SUPABASE_SERVICE_ROLE_KEY }}" },
+          { "name": "Authorization", "value": "={{ 'Bearer ' + $env.SUPABASE_SERVICE_ROLE_KEY }}" }
+        ] }
+      },
+      "id": "fetch-settings",
+      "name": "25_Fetch_Settings",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [-540, 0]
+    },
+    {
+      "parameters": {
+        "method": "GET",
+        "url": "={{ (() => { const c = $('10_Claim_Contact').item.json.body[0]; const handles = [c.phone, c.messenger_handle].filter(Boolean).map(h => '\"' + h + '\"').join(','); return $env.SUPABASE_URL + '/rest/v1/inbound_messages?select=body,from_address,direction,created_at&partner_id=eq.' + c.partner_id + '&from_address=in.(' + handles + ')&order=created_at.desc&limit=10' })() }}",
+        "options": { "response": { "response": { "fullResponse": true } } },
+        "sendHeaders": true,
+        "headerParameters": { "parameters": [
+          { "name": "apikey", "value": "={{ $env.SUPABASE_SERVICE_ROLE_KEY }}" },
+          { "name": "Authorization", "value": "={{ 'Bearer ' + $env.SUPABASE_SERVICE_ROLE_KEY }}" }
+        ] }
+      },
+      "id": "fetch-inbound",
+      "name": "30_Fetch_Inbound",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [-540, 120]
+    },
+    {
+      "parameters": {
+        "method": "GET",
+        "url": "={{ (() => { const c = $('10_Claim_Contact').item.json.body[0]; const handles = [c.phone, c.messenger_handle].filter(Boolean).map(h => '\"' + h + '\"').join(','); return $env.SUPABASE_URL + '/rest/v1/outbound_messages?select=body,to_address,status,created_at&partner_id=eq.' + c.partner_id + '&to_address=in.(' + handles + ')&order=created_at.desc&limit=10' })() }}",
+        "options": { "response": { "response": { "fullResponse": true } } },
+        "sendHeaders": true,
+        "headerParameters": { "parameters": [
+          { "name": "apikey", "value": "={{ $env.SUPABASE_SERVICE_ROLE_KEY }}" },
+          { "name": "Authorization", "value": "={{ 'Bearer ' + $env.SUPABASE_SERVICE_ROLE_KEY }}" }
+        ] }
+      },
+      "id": "fetch-outbound",
+      "name": "35_Fetch_Outbound",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [-540, 240]
+    },
+    {
+      "parameters": {
+        "jsCode": "const c = $('10_Claim_Contact').item.json.body[0];\nconst p = ($('20_Fetch_Partner').item.json.body || [])[0] || {};\nconst s = ($('25_Fetch_Settings').item.json.body || [])[0] || {};\nconst inbound = ($('30_Fetch_Inbound').item.json.body || []).map(m => ({ ts: m.created_at, role: 'lead', text: m.body }));\nconst outbound = ($('35_Fetch_Outbound').item.json.body || []).map(m => ({ ts: m.created_at, role: 'ai', text: m.body }));\nconst history = inbound.concat(outbound).sort((a,b) => a.ts.localeCompare(b.ts));\nconst aiName = s.ai_assistant_name || 'Ассистент';\nconst tone = s.ai_tone || 'formal';\nconst state = c.ai_state || 'greeting';\n\nconst systemPrompt = `Вы — ${aiName}, помощница партнёра InCruises ${p.name || ''}. Контактируете с клиентом партнёра в мессенджере.\n\n# Идентичность\n- Представляйтесь как ассистент партнёра, НЕ как сам партнёр. На прямой вопрос «ты бот?» отвечайте честно: «AI-ассистент».\n- Никогда не давайте обещаний от имени партнёра.\n\n# Тон и формат\n- Обращение строго на «вы» (формальный тон).\n- Короткие сообщения 1-2 предложения.\n- Максимум 1 эмодзи на сообщение.\n- Без markdown и списков. Обычный текст.\n\n# Язык\n- База — русский. Если контакт пишет на KZ/EN — переключитесь и держите этот язык.\n- Не смешивайте языки в одном сообщении.\n\n# Compliance (НАРУШАТЬ НЕЛЬЗЯ)\n- Никогда не обещайте конкретный доход, гарантированную прибыль, сроки окупаемости.\n- Никаких scarcity-тактик (\"места заканчиваются\", \"только сегодня\").\n- Никаких медицинских, юридических, финансовых советов.\n- На STOP/НЕ ПИШИТЕ → action='stop', intent='stop'.\n\n# Этапы диалога\ngreeting → qualification → presentation → q_and_a → objection → close.\nТекущий: ${state}. Двигайтесь органично.\n\n# Эскалация (escalate=true ОБЯЗАТЕЛЬНО)\n- Негатив/оскорбления → escalate_reason='negative'\n- «оплачу/куда платить/готов начать» → escalate_reason='ready_to_pay', intent='ready_to_pay'\n- Медиа от лида (картинка/голос/файл) → escalate_reason='media', intent='media_received'\n- Не знаете ответа из БЗ → escalate_reason='no_kb'\n- confidence<0.6 → escalate_reason='low_confidence'\nПри эскалации в text напишите контакту «секунду, передаю Сайре» (на его языке).\n\n# Объекции\n- «Нет денег» — стоимость относительно value, опция минимального тарифа\n- «Нет времени» — passive side-доход, 1-2 часа в неделю\n- «Пирамида/MLM» — честно признать модель, упор на реальный продукт (путешествия)\n- «Не верю / негативный опыт» — эмпатия, попросить рассказать\n- «Посоветоваться» — принять, предложить материалы\n- «Подумаю» — принять, спросить какой вопрос остался\n- «Не подхожу» — переформулировать мягко\n- «Сложно» — разбить на шаги\nБез давления. Возражение 2+ раз → эскалация.\n\n# Контекст\nКонтакт: ${c.name || ''}, timezone ${c.timezone || 'Asia/Almaty'}.\nReferral партнёра: ${p.referral_url || '(не задан)'}.\n\n# Гибрид\n- greeting/presentation/close — придерживайтесь шаблона, подставляйте имя.\n- qualification/q_and_a/objection — генерируйте по правилам выше.\n\nВыход — строго JSON по schema. Без markdown-обёртки.`;\n\nconst historyText = history.length === 0 ? '(история пуста)' : history.map(m => '[' + m.role + '] ' + m.text).join('\\n');\nconst userPrompt = 'Имя контакта: ' + (c.name || '') + '\\n\\nПоследние сообщения:\\n' + historyText + '\\n\\nСгенерируй следующее сообщение и метаданные строго в JSON по schema.';\n\nconst schema = {\n  name: 'ai_reply',\n  strict: true,\n  schema: {\n    type: 'object',\n    additionalProperties: false,\n    required: ['action','text','intent','escalate','escalate_reason','sentiment','confidence','next_state'],\n    properties: {\n      action: { type: 'string', enum: ['reply','defer','stop'] },\n      text: { type: 'string' },\n      intent: { type: 'string', enum: ['qualification','ready_to_pay','objection','media_received','stop','other'] },\n      escalate: { type: 'boolean' },\n      escalate_reason: { type: 'string', enum: ['negative','ready_to_pay','low_confidence','no_kb','media','none'] },\n      sentiment: { type: 'string', enum: ['positive','neutral','negative'] },\n      confidence: { type: 'number', minimum: 0, maximum: 1 },\n      next_state: { type: 'string', enum: ['greeting','qualification','presentation','q_and_a','objection','close','paused','escalated','cold'] }\n    }\n  }\n};\n\nconst openai_body = {\n  model: 'gpt-4.1-mini',\n  temperature: 0.3,\n  messages: [\n    { role: 'system', content: systemPrompt },\n    { role: 'user', content: userPrompt }\n  ],\n  response_format: { type: 'json_schema', json_schema: schema }\n};\n\nreturn [{ json: {\n  contact_id: c.id,\n  partner_id: c.partner_id,\n  contact_name: c.name,\n  contact_phone: c.phone,\n  contact_handle: c.messenger_handle,\n  contact_messenger: c.messenger,\n  current_state: state,\n  openai_body\n} }];"
+      },
+      "id": "build-prompt",
+      "name": "40_Build_Prompt",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [-320, 60]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://api.openai.com/v1/chat/completions",
+        "options": { "response": { "response": { "fullResponse": true } } },
+        "sendHeaders": true,
+        "headerParameters": { "parameters": [
+          { "name": "Authorization", "value": "={{ 'Bearer ' + $env.OPENAI_API_KEY }}" },
+          { "name": "Content-Type", "value": "application/json" }
+        ] },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ JSON.stringify($json.openai_body) }}"
+      },
+      "id": "openai-chat",
+      "name": "50_OpenAI_Chat",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [-100, 60],
+      "continueOnFail": true
+    },
+    {
+      "parameters": {
+        "jsCode": "const upstream = $('40_Build_Prompt').item.json;\nconst resp = $json;\nif (resp.error || (resp.body && resp.body.error)) {\n  return [{ json: { ...upstream, ai_error: (resp.body && resp.body.error) || resp.error || resp.statusCode || 'unknown', ai_reply: null } }];\n}\nconst raw = resp.body && resp.body.choices && resp.body.choices[0] && resp.body.choices[0].message && resp.body.choices[0].message.content;\nlet parsed = null;\ntry { parsed = JSON.parse(raw); } catch (e) { return [{ json: { ...upstream, ai_error: 'parse_failed: ' + e.message, ai_raw: raw, ai_reply: null } }]; }\nreturn [{ json: { ...upstream, ai_reply: parsed, ai_raw: raw, ai_usage: resp.body && resp.body.usage } }];"
+      },
+      "id": "parse-ai",
+      "name": "60_Parse_AI_JSON",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [120, 60]
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": { "caseSensitive": true, "leftValue": "", "typeValidation": "loose" },
+          "conditions": [{
+            "id": "has-reply",
+            "leftValue": "={{ $json.ai_reply ? 'yes' : 'no' }}",
+            "rightValue": "yes",
+            "operator": { "type": "string", "operation": "equals" }
+          }],
+          "combinator": "and"
+        }
+      },
+      "id": "if-reply-ok",
+      "name": "65_If_Reply_OK",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [340, 60]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "={{ $env.SUPABASE_URL + '/rest/v1/outbound_messages' }}",
+        "options": { "response": { "response": { "fullResponse": true } } },
+        "sendHeaders": true,
+        "headerParameters": { "parameters": [
+          { "name": "apikey", "value": "={{ $env.SUPABASE_SERVICE_ROLE_KEY }}" },
+          { "name": "Authorization", "value": "={{ 'Bearer ' + $env.SUPABASE_SERVICE_ROLE_KEY }}" },
+          { "name": "Content-Type", "value": "application/json" },
+          { "name": "Prefer", "value": "return=representation" }
+        ] },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ JSON.stringify({ partner_id: $json.partner_id, channel: ($json.contact_messenger === 'telegram' ? 'telegram' : ($json.contact_messenger === 'whatsapp' ? 'whatsapp' : 'other')), to_address: ($json.contact_handle || $json.contact_phone || ''), body: $json.ai_reply.text, status: 'dry_run' }) }}"
+      },
+      "id": "insert-outbound",
+      "name": "70_Insert_Outbound",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [560, -60]
+    },
+    {
+      "parameters": {
+        "method": "PATCH",
+        "url": "={{ $env.SUPABASE_URL + '/rest/v1/contacts?id=eq.' + $('60_Parse_AI_JSON').item.json.contact_id }}",
+        "options": { "response": { "response": { "fullResponse": true } } },
+        "sendHeaders": true,
+        "headerParameters": { "parameters": [
+          { "name": "apikey", "value": "={{ $env.SUPABASE_SERVICE_ROLE_KEY }}" },
+          { "name": "Authorization", "value": "={{ 'Bearer ' + $env.SUPABASE_SERVICE_ROLE_KEY }}" },
+          { "name": "Content-Type", "value": "application/json" }
+        ] },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ JSON.stringify({ ai_state: $('60_Parse_AI_JSON').item.json.ai_reply.next_state, do_not_contact: ($('60_Parse_AI_JSON').item.json.ai_reply.intent === 'stop') ? true : undefined }) }}"
+      },
+      "id": "update-contact",
+      "name": "80_Update_Contact",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [780, -60]
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": { "caseSensitive": true, "leftValue": "", "typeValidation": "loose" },
+          "conditions": [{
+            "id": "should-escalate",
+            "leftValue": "={{ $('60_Parse_AI_JSON').item.json.ai_reply.escalate ? 'yes' : 'no' }}",
+            "rightValue": "yes",
+            "operator": { "type": "string", "operation": "equals" }
+          }],
+          "combinator": "and"
+        }
+      },
+      "id": "if-escalate",
+      "name": "90_If_Escalate",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [1000, -60]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "={{ 'https://api.telegram.org/bot' + $env.TG_BOT_TOKEN + '/sendMessage' }}",
+        "options": { "response": { "response": { "fullResponse": true } } },
+        "sendHeaders": true,
+        "headerParameters": { "parameters": [
+          { "name": "Content-Type", "value": "application/json" }
+        ] },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ JSON.stringify({ chat_id: $env.TG_GROUP_CHAT_ID, parse_mode: 'HTML', text: '🚨 <b>AI escalation</b>\\nContact: ' + ($('60_Parse_AI_JSON').item.json.contact_name || '') + '\\nReason: ' + $('60_Parse_AI_JSON').item.json.ai_reply.escalate_reason + '\\nSentiment: ' + $('60_Parse_AI_JSON').item.json.ai_reply.sentiment + '\\nIntent: ' + $('60_Parse_AI_JSON').item.json.ai_reply.intent + '\\n— ' + $('60_Parse_AI_JSON').item.json.ai_reply.text }) }}"
+      },
+      "id": "notify-tg",
+      "name": "91_Notify_TG",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [1220, -120],
+      "continueOnFail": true
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "={{ $env.SUPABASE_URL + '/rest/v1/events_log' }}",
+        "options": { "response": { "response": { "fullResponse": true } } },
+        "sendHeaders": true,
+        "headerParameters": { "parameters": [
+          { "name": "apikey", "value": "={{ $env.SUPABASE_SERVICE_ROLE_KEY }}" },
+          { "name": "Authorization", "value": "={{ 'Bearer ' + $env.SUPABASE_SERVICE_ROLE_KEY }}" },
+          { "name": "Content-Type", "value": "application/json" }
+        ] },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ JSON.stringify({ partner_id: $('60_Parse_AI_JSON').item.json.partner_id, actor: 'ai', event: 'ai_conversation_failed', payload: { contact_id: $('60_Parse_AI_JSON').item.json.contact_id, error: $('60_Parse_AI_JSON').item.json.ai_error, raw: $('60_Parse_AI_JSON').item.json.ai_raw || null, state: $('60_Parse_AI_JSON').item.json.current_state } }) }}"
+      },
+      "id": "log-failure",
+      "name": "95_Log_Failure",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [560, 180],
+      "continueOnFail": true
+    }
+  ],
+  "connections": {
+    "01_Schedule_Trigger": { "main": [[{ "node": "10_Claim_Contact", "type": "main", "index": 0 }]] },
+    "10_Claim_Contact":   { "main": [[{ "node": "15_If_Found",      "type": "main", "index": 0 }]] },
+    "15_If_Found": {
+      "main": [
+        [{ "node": "20_Fetch_Partner", "type": "main", "index": 0 }],
+        []
+      ]
+    },
+    "20_Fetch_Partner":  { "main": [[{ "node": "25_Fetch_Settings", "type": "main", "index": 0 }]] },
+    "25_Fetch_Settings": { "main": [[{ "node": "30_Fetch_Inbound", "type": "main", "index": 0 }]] },
+    "30_Fetch_Inbound":  { "main": [[{ "node": "35_Fetch_Outbound", "type": "main", "index": 0 }]] },
+    "35_Fetch_Outbound": { "main": [[{ "node": "40_Build_Prompt", "type": "main", "index": 0 }]] },
+    "40_Build_Prompt":   { "main": [[{ "node": "50_OpenAI_Chat", "type": "main", "index": 0 }]] },
+    "50_OpenAI_Chat":    { "main": [[{ "node": "60_Parse_AI_JSON", "type": "main", "index": 0 }]] },
+    "60_Parse_AI_JSON":  { "main": [[{ "node": "65_If_Reply_OK", "type": "main", "index": 0 }]] },
+    "65_If_Reply_OK": {
+      "main": [
+        [{ "node": "70_Insert_Outbound", "type": "main", "index": 0 }],
+        [{ "node": "95_Log_Failure",    "type": "main", "index": 0 }]
+      ]
+    },
+    "70_Insert_Outbound": { "main": [[{ "node": "80_Update_Contact", "type": "main", "index": 0 }]] },
+    "80_Update_Contact":  { "main": [[{ "node": "90_If_Escalate",    "type": "main", "index": 0 }]] },
+    "90_If_Escalate": {
+      "main": [
+        [{ "node": "91_Notify_TG", "type": "main", "index": 0 }],
+        []
+      ]
+    }
+  }
+}
