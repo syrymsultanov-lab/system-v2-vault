@@ -16,7 +16,7 @@ updated: 2026-05-16
 - Naming: `NN_node_name` для всех нод (memory `feedback_n8n_node_naming`)
 - Секреты: `.env` VPS + `environment:` секция `docker-compose.yml` + `compose up -d` (memory `reference_n8n_docker_env_proxy`)
 
-## Реальный inventory (сверено 2026-05-16 через `/api/v1/workflows`)
+## Реальный inventory (сверено 2026-05-16, после WF2 cleanup)
 
 ### Active (5)
 
@@ -28,16 +28,16 @@ updated: 2026-05-16
 | **WF9** Outbound Message Dispatcher | `I6m8cSqkX1M3zpyC` | fetch `outbound_messages[status='approved']` → отправка по каналу → status='sent' | cron / event |
 | **WF13** Stuck AI Jobs Watchdog | `SBzh4cIzNKTSz25s` | `reset_stuck_ai_jobs(10)` — running > 10 мин → failed | cron 5 мин |
 
-### Inactive / placeholders (4)
+### Inactive / placeholders (3)
 
 | WF | id | Статус |
 |----|----|--------|
-| **WF2** Lead Dedup & Normalize | `PN0dW9elgK2Aaz3i` | Логика переехала в WF1 (Plan B 2026-05-05). Можно удалить |
 | **WF5** Inbound Message Capture | `dFDgavZyMIQgYlKO` | Placeholder для Phase C C1 (text Q&A inbound). webhookId UUID assigned 2026-05-05 |
 | **WF6** AI Reply Draft | `NssZBVrm2uvi8DzH` | Placeholder для Phase C C1 (n8n AI Agent node + Postgres memory). Перепишется |
 | **WF12** AI Error & Retry Handler | `z08w5OTjaVEfkSsl` | Placeholder. Текущая Mark Failed branch в WF3 покрывает базовый случай |
 
 ### Удалённые / несуществующие
+- **WF2** Lead Dedup & Normalize — удалён 2026-05-16 (логика переехала в WF1 Plan B 2026-05-05). JSON-бэкап в репо `SYSTEM_V2_n8n_workflows_JSON/workflows/WF2_Lead_Dedup_Normalize.json`
 - **WF7** — конвертация lead→contact удалена 2026-05-06 (memory `project_lead_contact_directionality`)
 - **WF8/10/11/14/15** — упомянуты в планах (AI Agent.md, старый SYSTEM V2.md), но не созданы
 
