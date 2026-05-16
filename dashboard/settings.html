@@ -355,20 +355,6 @@
 
       <div class="set-row">
         <div class="set-l">
-          <div class="set-t">Режим работы</div>
-          <div class="set-d">
-            <b>Полуавтомат</b> — AI готовит черновик, вы подтверждаете отправку. <b>Ручной</b> — AI только предлагает шаблоны.
-            Полностью автоматический режим недоступен (InCruises compliance + Meta/WABA policy).
-          </div>
-        </div>
-        <div class="seg" id="seg-mode">
-          <button class="active" data-v="semi">Полуавтомат</button>
-          <button data-v="manual">Ручной</button>
-        </div>
-      </div>
-
-      <div class="set-row">
-        <div class="set-l">
           <div class="set-t">Язык черновиков</div>
           <div class="set-d">AI будет подбирать язык под лид автоматически, но при ручном выборе — использует только заданный.</div>
         </div>
@@ -944,8 +930,7 @@ function copyRefLink() {
 function fillAI(s) {
   if (!s) return;
   document.getElementById('f-ai-on').checked = !!s.ai_enabled;
-  setSeg('seg-mode', s.ai_mode || 'semi');
-  setSeg('seg-tone', s.ai_tone || 'warm');
+  setSeg('seg-tone', s.ai_tone || 'formal');
   document.getElementById('f-ai-lang').value = s.ai_language || 'auto';
   document.getElementById('f-quiet-from').value = toTimeInput(s.quiet_from) || '22:00';
   document.getElementById('f-quiet-to').value   = toTimeInput(s.quiet_to)   || '09:00';
@@ -996,14 +981,6 @@ function bindAutosave() {
     if (!SETTINGS_LOADED) return;
     patchSettings({ ai_enabled: e.target.checked });
     updateTop();
-  });
-  document.getElementById('seg-mode').addEventListener('click', e => {
-    const b = e.target.closest('button'); if (!b) return;
-    setSeg('seg-mode', b.dataset.v);
-    if (!SETTINGS_LOADED) return;
-    patchSettings({ ai_mode: b.dataset.v });
-    updateTop();
-    showToast(b.dataset.v === 'semi' ? '🤖 Режим: Полуавтомат' : '✋ Режим: Ручной');
   });
   document.getElementById('seg-tone').addEventListener('click', e => {
     const b = e.target.closest('button'); if (!b) return;
@@ -1068,9 +1045,7 @@ bindAutosave();
 // ======================================================================
 function updateTop() {
   const on = document.getElementById('f-ai-on').checked;
-  const modeBtn = document.querySelector('#seg-mode button.active');
-  const mode = modeBtn ? modeBtn.dataset.v : 'semi';
-  document.getElementById('st-ai').textContent = on ? (mode === 'semi' ? 'Полу-авто' : 'Ручной') : 'OFF';
+  document.getElementById('st-ai').textContent = on ? 'Авто' : 'OFF';
 }
 
 // ======================================================================
