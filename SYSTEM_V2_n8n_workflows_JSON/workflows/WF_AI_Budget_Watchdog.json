@@ -1,0 +1,118 @@
+{
+  "name": "AI Budget Watchdog",
+  "active": false,
+  "settings": { "callerPolicy": "workflowsFromSameOwner", "executionOrder": "v1" },
+  "nodes": [
+    {
+      "parameters": {
+        "rule": { "interval": [{ "field": "cronExpression", "expression": "0 9 * * *" }] }
+      },
+      "id": "trg-cron",
+      "name": "01_Schedule_Trigger",
+      "type": "n8n-nodes-base.scheduleTrigger",
+      "typeVersion": 1.2,
+      "position": [-900, 0]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "={{ $env.SUPABASE_URL + '/rest/v1/rpc/get_ai_cost_summary' }}",
+        "options": { "response": { "response": { "fullResponse": true } } },
+        "sendHeaders": true,
+        "headerParameters": { "parameters": [
+          { "name": "apikey", "value": "={{ $env.SUPABASE_SERVICE_ROLE_KEY }}" },
+          { "name": "Authorization", "value": "={{ 'Bearer ' + $env.SUPABASE_SERVICE_ROLE_KEY }}" },
+          { "name": "Content-Type", "value": "application/json" }
+        ] },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ JSON.stringify({}) }}"
+      },
+      "id": "fetch-summary",
+      "name": "10_Fetch_Cost_Summary",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [-680, 0]
+    },
+    {
+      "parameters": {
+        "jsCode": "const row = (($json.body || [])[0]) || { daily_cost_usd: 0, monthly_cost_usd: 0, daily_call_count: 0, monthly_call_count: 0 };\nconst daily = Number(row.daily_cost_usd) || 0;\nconst monthly = Number(row.monthly_cost_usd) || 0;\nconst dailyLimit = Number($env.AI_BUDGET_DAILY_USD || 2);\nconst monthlyLimit = Number($env.AI_BUDGET_MONTHLY_USD || 50);\nconst dailyPct = dailyLimit > 0 ? daily / dailyLimit : 0;\nconst monthlyPct = monthlyLimit > 0 ? monthly / monthlyLimit : 0;\nconst dailyExceeded = daily >= dailyLimit;\nconst monthlyExceeded = monthly >= monthlyLimit;\nconst dailyWarn = !dailyExceeded && dailyPct >= 0.8;\nconst monthlyWarn = !monthlyExceeded && monthlyPct >= 0.8;\nconst alert = dailyExceeded || monthlyExceeded || dailyWarn || monthlyWarn;\nlet severity = 'info';\nif (dailyExceeded || monthlyExceeded) severity = 'exceeded';\nelse if (dailyWarn || monthlyWarn) severity = 'warn';\nreturn [{ json: {\n  daily_cost_usd: daily,\n  monthly_cost_usd: monthly,\n  daily_call_count: Number(row.daily_call_count) || 0,\n  monthly_call_count: Number(row.monthly_call_count) || 0,\n  daily_limit_usd: dailyLimit,\n  monthly_limit_usd: monthlyLimit,\n  daily_pct: Number((dailyPct * 100).toFixed(1)),\n  monthly_pct: Number((monthlyPct * 100).toFixed(1)),\n  daily_exceeded: dailyExceeded,\n  monthly_exceeded: monthlyExceeded,\n  alert: alert,\n  severity: severity,\n  run_at: new Date().toISOString()\n} }];"
+      },
+      "id": "evaluate",
+      "name": "20_Evaluate_Budget",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [-460, 0]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "={{ $env.SUPABASE_URL + '/rest/v1/events_log' }}",
+        "options": { "response": { "response": { "fullResponse": true } } },
+        "sendHeaders": true,
+        "headerParameters": { "parameters": [
+          { "name": "apikey", "value": "={{ $env.SUPABASE_SERVICE_ROLE_KEY }}" },
+          { "name": "Authorization", "value": "={{ 'Bearer ' + $env.SUPABASE_SERVICE_ROLE_KEY }}" },
+          { "name": "Content-Type", "value": "application/json" }
+        ] },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ JSON.stringify({ entity_type: 'workflow', event: 'ai_budget_watchdog_run', actor: 'system', payload: $json }) }}"
+      },
+      "id": "log-event",
+      "name": "30_Log_Event",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [-240, 0],
+      "continueOnFail": true
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": { "caseSensitive": true, "leftValue": "", "typeValidation": "loose" },
+          "conditions": [{
+            "id": "should-alert",
+            "leftValue": "={{ $('20_Evaluate_Budget').item.json.alert ? 'yes' : 'no' }}",
+            "rightValue": "yes",
+            "operator": { "type": "string", "operation": "equals" }
+          }],
+          "combinator": "and"
+        }
+      },
+      "id": "if-alert",
+      "name": "40_If_Alert",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [-20, 0]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "={{ 'https://api.telegram.org/bot' + $env.TG_BOT_TOKEN + '/sendMessage' }}",
+        "options": { "response": { "response": { "fullResponse": true } } },
+        "sendHeaders": true,
+        "headerParameters": { "parameters": [
+          { "name": "Content-Type", "value": "application/json" }
+        ] },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ (() => { const s = $('20_Evaluate_Budget').item.json; const icon = s.severity === 'exceeded' ? '🚨' : '⚠️'; const head = s.severity === 'exceeded' ? 'AI BUDGET EXCEEDED' : 'AI budget warning'; const lines = [icon + ' <b>' + head + '</b>', 'Daily:   $' + s.daily_cost_usd + ' / $' + s.daily_limit_usd + ' (' + s.daily_pct + '%)' + (s.daily_exceeded ? ' ❌' : ''), 'Monthly: $' + s.monthly_cost_usd + ' / $' + s.monthly_limit_usd + ' (' + s.monthly_pct + '%)' + (s.monthly_exceeded ? ' ❌' : ''), 'Calls 24h: ' + s.daily_call_count + ' | MTD: ' + s.monthly_call_count]; return JSON.stringify({ chat_id: $env.TG_GROUP_CHAT_ID, parse_mode: 'HTML', text: lines.join('\\n') }); })() }}"
+      },
+      "id": "notify-tg",
+      "name": "50_Notify_TG",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [200, -100],
+      "continueOnFail": true
+    }
+  ],
+  "connections": {
+    "01_Schedule_Trigger": { "main": [[{ "node": "10_Fetch_Cost_Summary", "type": "main", "index": 0 }]] },
+    "10_Fetch_Cost_Summary": { "main": [[{ "node": "20_Evaluate_Budget", "type": "main", "index": 0 }]] },
+    "20_Evaluate_Budget": { "main": [[{ "node": "30_Log_Event", "type": "main", "index": 0 }]] },
+    "30_Log_Event": { "main": [[{ "node": "40_If_Alert", "type": "main", "index": 0 }]] },
+    "40_If_Alert": { "main": [[{ "node": "50_Notify_TG", "type": "main", "index": 0 }], []] }
+  },
+  "meta": { "template": "SYSTEM_V2_v1" },
+  "versionId": "ai-budget-watchdog-v1-2026-05-17"
+}

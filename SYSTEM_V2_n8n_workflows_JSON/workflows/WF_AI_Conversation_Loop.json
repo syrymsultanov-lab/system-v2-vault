@@ -214,13 +214,35 @@
         ] },
         "sendBody": true,
         "specifyBody": "json",
-        "jsonBody": "={{ JSON.stringify({ ai_state: $('60_Parse_AI_JSON').item.json.ai_reply.next_state, do_not_contact: ($('60_Parse_AI_JSON').item.json.ai_reply.intent === 'stop') ? true : undefined }) }}"
+        "jsonBody": "={{ JSON.stringify({ ai_state: $('60_Parse_AI_JSON').item.json.ai_reply.next_state, do_not_contact: ($('60_Parse_AI_JSON').item.json.ai_reply.intent === 'stop') ? true : undefined, last_outbound_at: new Date().toISOString() }) }}"
       },
       "id": "update-contact",
       "name": "80_Update_Contact",
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.2,
       "position": [780, -60]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "={{ $env.SUPABASE_URL + '/rest/v1/ai_job_runs' }}",
+        "options": { "response": { "response": { "fullResponse": true } } },
+        "sendHeaders": true,
+        "headerParameters": { "parameters": [
+          { "name": "apikey", "value": "={{ $env.SUPABASE_SERVICE_ROLE_KEY }}" },
+          { "name": "Authorization", "value": "={{ 'Bearer ' + $env.SUPABASE_SERVICE_ROLE_KEY }}" },
+          { "name": "Content-Type", "value": "application/json" }
+        ] },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ (() => { const u = $('60_Parse_AI_JSON').item.json.ai_usage || {}; const pt = u.prompt_tokens || 0; const ct = u.completion_tokens || 0; const cost = (pt * 0.00000015) + (ct * 0.00000060); return JSON.stringify({ status: 'succeeded', input: { contact_id: $('60_Parse_AI_JSON').item.json.contact_id, partner_id: $('60_Parse_AI_JSON').item.json.partner_id, state: $('60_Parse_AI_JSON').item.json.current_state, model: 'gpt-4.1-mini' }, output: { prompt_tokens: pt, completion_tokens: ct, total_tokens: u.total_tokens || (pt + ct), cost_usd: Number(cost.toFixed(6)), next_state: $('60_Parse_AI_JSON').item.json.ai_reply.next_state, intent: $('60_Parse_AI_JSON').item.json.ai_reply.intent, escalated: !!$('60_Parse_AI_JSON').item.json.ai_reply.escalate } }) })() }}"
+      },
+      "id": "log-ai-job-run",
+      "name": "85_Log_AI_Job_Run",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [890, -60],
+      "continueOnFail": true
     },
     {
       "parameters": {
@@ -239,7 +261,7 @@
       "name": "90_If_Escalate",
       "type": "n8n-nodes-base.if",
       "typeVersion": 2.2,
-      "position": [1000, -60]
+      "position": [1110, -60]
     },
     {
       "parameters": {
@@ -258,7 +280,7 @@
       "name": "91_Notify_TG",
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.2,
-      "position": [1220, -120],
+      "position": [1330, -120],
       "continueOnFail": true
     },
     {
@@ -307,7 +329,8 @@
       ]
     },
     "70_Insert_Outbound": { "main": [[{ "node": "80_Update_Contact", "type": "main", "index": 0 }]] },
-    "80_Update_Contact":  { "main": [[{ "node": "90_If_Escalate",    "type": "main", "index": 0 }]] },
+    "80_Update_Contact":  { "main": [[{ "node": "85_Log_AI_Job_Run", "type": "main", "index": 0 }]] },
+    "85_Log_AI_Job_Run":  { "main": [[{ "node": "90_If_Escalate",    "type": "main", "index": 0 }]] },
     "90_If_Escalate": {
       "main": [
         [{ "node": "91_Notify_TG", "type": "main", "index": 0 }],

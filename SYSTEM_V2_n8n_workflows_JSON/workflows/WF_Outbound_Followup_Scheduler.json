@@ -1,0 +1,84 @@
+{
+  "name": "Outbound Followup Scheduler",
+  "active": false,
+  "settings": { "callerPolicy": "workflowsFromSameOwner", "executionOrder": "v1" },
+  "nodes": [
+    {
+      "parameters": { "rule": { "interval": [{ "field": "hours", "hoursInterval": 1 }] } },
+      "id": "trg-cron",
+      "name": "01_Schedule_Trigger",
+      "type": "n8n-nodes-base.scheduleTrigger",
+      "typeVersion": 1.2,
+      "position": [-700, 0]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "={{ $env.SUPABASE_URL + '/rest/v1/rpc/schedule_followups' }}",
+        "options": { "response": { "response": { "fullResponse": true } } },
+        "sendHeaders": true,
+        "headerParameters": { "parameters": [
+          { "name": "apikey", "value": "={{ $env.SUPABASE_SERVICE_ROLE_KEY }}" },
+          { "name": "Authorization", "value": "={{ 'Bearer ' + $env.SUPABASE_SERVICE_ROLE_KEY }}" },
+          { "name": "Content-Type", "value": "application/json" }
+        ] },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ JSON.stringify({}) }}"
+      },
+      "id": "call-rpc",
+      "name": "10_Schedule_Followups",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [-480, 0]
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": { "version": 2 },
+          "conditions": [{
+            "id": "has-changes",
+            "leftValue": "={{ ((($json.body || [])[0] || {}).scheduled_count || 0) + ((($json.body || [])[0] || {}).cold_count || 0) }}",
+            "rightValue": 0,
+            "operator": { "type": "number", "operation": "gt" }
+          }],
+          "combinator": "and"
+        }
+      },
+      "id": "if-any",
+      "name": "20_If_Any_Change",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [-260, 0]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "={{ $env.SUPABASE_URL + '/rest/v1/events_log' }}",
+        "options": { "response": { "response": { "fullResponse": true } } },
+        "sendHeaders": true,
+        "headerParameters": { "parameters": [
+          { "name": "apikey", "value": "={{ $env.SUPABASE_SERVICE_ROLE_KEY }}" },
+          { "name": "Authorization", "value": "={{ 'Bearer ' + $env.SUPABASE_SERVICE_ROLE_KEY }}" },
+          { "name": "Content-Type", "value": "application/json" }
+        ] },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ JSON.stringify({ entity_type: 'workflow', event: 'followup_scheduler_run', actor: 'system', payload: { scheduled_count: ($('10_Schedule_Followups').item.json.body[0] || {}).scheduled_count || 0, cold_count: ($('10_Schedule_Followups').item.json.body[0] || {}).cold_count || 0, run_at: new Date().toISOString() } }) }}"
+      },
+      "id": "log-event",
+      "name": "30_Log_Event",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [-40, 0],
+      "continueOnFail": true
+    }
+  ],
+  "connections": {
+    "01_Schedule_Trigger": { "main": [[{ "node": "10_Schedule_Followups", "type": "main", "index": 0 }]] },
+    "10_Schedule_Followups": { "main": [[{ "node": "20_If_Any_Change", "type": "main", "index": 0 }]] },
+    "20_If_Any_Change": { "main": [[{ "node": "30_Log_Event", "type": "main", "index": 0 }], []] }
+  },
+  "meta": { "template": "SYSTEM_V2_v1" },
+  "versionId": "outbound-followup-v1-2026-05-17"
+}
