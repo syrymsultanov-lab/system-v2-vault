@@ -2,13 +2,13 @@
 project: system-v2
 status: active
 supabase-ref: njwraxmlzglmofxiwmxs
-tables: 19
+tables: 20
 max-tables: 25
 hosting: hostinger
 domain: sairateam.com
 stack: static HTML/CSS/JS
 created: 2025-11-01
-updated: 2026-05-15
+updated: 2026-05-18
 ---
 
 # SYSTEM V2.1 — AI-Powered MLM Pipeline
@@ -32,7 +32,7 @@ Landing (sairateam.com) → Supabase (leads) → n8n (VPS) → AI Agent → Chan
 - **Automation**: n8n на Hostinger VPS
 - **Dashboard**: строится в Antigravity, хостится на Hostinger
 
-## 19 таблиц (актуально на 2026-05-04, см. CLAUDE.md для полного списка)
+## 20 таблиц (актуально на 2026-05-17, см. CLAUDE.md для полного списка)
 
 **Ядро (7):** `partners`, `leads`, `lead_messages`, `lead_channels` (переименованная старая `contacts`), `ai_jobs` (11 cols), `templates`, `events_log` (с actor whitelist)
 
@@ -40,7 +40,7 @@ Landing (sairateam.com) → Supabase (leads) → n8n (VPS) → AI Agent → Chan
 
 **Сообщения (2):** `inbound_messages` (WF5/WF6), `outbound_messages` (WF9)
 
-**AI-pipeline (3):** `lead_events` (имеет колонку `event_type`!), `ai_recommendations` (Phase B bridge с `processed_at` idempotency, добавлен 2026-05-04), `ai_job_runs` (не используется активно)
+**AI-pipeline (4):** `lead_events` (имеет колонку `event_type`!), `ai_recommendations` (Phase B bridge с `processed_at` idempotency, 2026-05-04), `ai_job_runs` (job_id nullable с 2026-05-17 — Conversation Loop пишет без ai_jobs), **`kb_chunks`** (RAG, 1536-dim vectors, RPC `match_kb_chunks`, 2026-05-17)
 
 **Триггеры:** `auth.users → partners`, `partners → partner_settings`, `leads INSERT → ai_jobs queued`. RLS own-only для всех 19.
 
@@ -70,7 +70,20 @@ Landing (sairateam.com) → Supabase (leads) → n8n (VPS) → AI Agent → Chan
 - [x] **WF1 Plan B switchover** (2026-05-05): landing `app.js` теперь POST на `/webhook/system-v2/lead-intake`. WF1 интейк-канал работает: Normalize → dedup check → Insert Lead → lead_events → events_log → respond. Queue AI Job нода удалена (dedup триггер). E2E через webhook curl PASS. WF5 webhookId UUID assigned (был null → 404).
 - [x] **WF7 удалён** (2026-05-06): конвертация lead→contact отменена. Decision: лид навсегда остаётся лидом. Будущая фича — обратное направление (contact → lead) когда партнёр инициирует презентацию для существующего контакта
 - [x] **Notify-WF Phase 1** production-ready (2026-05-15): WF4 нода `60_Notify_TG_Group` шлёт уведомления в TG group `AI&Incruises` при создании AI-task. continueOnFail=true. Bot `@incruises_ai_bot`, chat_id `-5110729354`. E2E smoke PASS (msg_id=27). Урок — env для контейнера нужен в `docker-compose.yml` `environment:` секции + `compose up -d`, не restart
-- [ ] Phase C — outbound + conversational + voice (planning, 12-18 сессий, см. [[AI Agent]]). **Блокер:** ответы на `AI Agent Questionnaire.md` (17 разделов, ждут с 2026-04-25)
+- [x] **Phase C1 — Reactive AI assistant + RAG** production-ready (2026-05-17):
+  - TG Conversation Inbound теперь делает полный AI-cycle inline (13 новых нод после `50_Touch_Contact`): fetch partner/settings/history → embed query → RAG retrieve → OpenAI → TG sendMessage → insert outbound (status=sent) → log AI run (cost) → update contact (включая `updated_at` bump для предотвращения Loop double-fire)
+  - **Latency 3 мин → 3-5 сек** (cron polling убран для reactive)
+  - WF9 переписан с placeholder на реальный TG dispatch (proactive путь, cron 1мин)
+  - Conversation Loop патчена: `85_Log_AI_Job_Run` (cost tracking реально работает), `80_Update_Contact +last_outbound_at` (Followup Scheduler видит outbound)
+  - **RAG full** (Phase C5 досрочно): pgvector + `kb_chunks` (20-я таблица) + RPC `match_kb_chunks` + WF14 KB Ingest (batch embed) + **2289 chunks** из 13 источников (5 MLM книг ~1.6K, 3 InCruises PDF, KB/Comp Plan/Business Rules/Answers, Google txt)
+  - Prompt: state-aware length, anti-hallucination (нет в КБ→escalate no_kb), anti-question fatigue (q_and_a/presentation/objection без обязательного вопроса)
+- [x] **Sandbox прогон #1 + 8 bug fixes** (2026-05-18):
+  - InCruises FAQ ingested → 14 sources / **2314 chunks**
+  - Bugs fixed in TG Conversation Inbound WF: media→escalation (нода 45-49), structured output logging в `ai_job_runs`, race Inbound↔Loop double-fire (`50_Touch_Contact` + `115_Update_Contact` bump `updated_at`), income hedge в промпте (обязательная оговорка при цитировании сумм), no-repeat-greeting, STOP intent case-insensitive с 13 синонимами, `95_If_Reply_OK` пропускает `action='stop'`, **history fetch unified на `tg_chat_id`** (был broken на контактах без `messenger_handle`)
+  - Backfill 77+77 строк Сырыма и 13+10 Сайры под единый numeric identifier
+  - Сайрин прогон 13/14 broken (history fetch) до фикса → ждёт повторного прогона на чистом стенде
+- [ ] **Sandbox прогон #2 Сайры на чистом стенде** — 🔴 блокер Phase C2, все фиксы живые
+- [ ] Phase C2 — Эскалация (1-2 сессии). Блокер: sandbox #2
 - [ ] Contact import (CSV/VCF/Google)
 - [ ] **Future:** contact → lead path (когда партнёр запускает презентацию для контакта из телефонной книги, нужен workflow для создания связанного лида)
 
