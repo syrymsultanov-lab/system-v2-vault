@@ -8,7 +8,7 @@ hosting: hostinger
 domain: sairateam.com
 stack: static HTML/CSS/JS
 created: 2025-11-01
-updated: 2026-05-20-evening
+updated: 2026-05-21
 ---
 
 # SYSTEM V2.1 — AI-Powered MLM Pipeline
@@ -94,16 +94,34 @@ Landing (sairateam.com) → Supabase (leads) → n8n (VPS) → AI Agent → Chan
   - Pass-through citation pattern «(по 109RU/214RU)»
   - 106RU geo-fence PL (⚠ требует миграцию `contacts.country`)
   - Smoke v1 5/5 PASS (после поправки vердикта по Q4), smoke v2 3/3 compliance-safe
-- [ ] **🔴 Compliance fixes Приоритет 2 — лендинг + consent audit:**
-  - **`index.html` audit** — grep на promo-claims дохода и явные обещания
-  - **Consent flow audit** — WF9 dispatch + Followup Scheduler + Conversation Loop на `consent_at IS NOT NULL` gate перед proactive AI-сообщением (ст.14-15)
-  - **ст.18 2-летний NDA** — информационно (offboard scenario не реализуется сейчас)
-- [ ] **🔴 Docs rewrite** (после compliance): закрыть Q3/Q15-19/Q22/Q27/Q37/Q38-39 в `Questions for Saira.md`, обновить `InCruises Ranks.md` под Active vol requirements + ИКБ + Quick Start
-- [ ] **🟡 Сайре 10 оставшихся Q** (структура «ног» SMD→ED, формулировки возражений, личные истории)
+- [x] **🔴 Compliance Приоритет 2 — audit лендинга** (2026-05-21):
+  - `index.html` audit найдено: H1 «пока ты отдыхаешь» soft passive earnings, fictitious testimonials в reviews.html (особенно «команда выросла в 2 раза»)
+  - `legal.html:43` спасает ст.13 явным disclosure «не является официальным сайтом InCruises»
+  - 3 disclaimer ст.17 на месте (comparison + 2 footer)
+- [x] **🔴 УТП-rewrite лендинга** (2026-05-21): compliance leverage заменил time leverage.
+  - H1 «обученный правилам твоей MLM-компании», badge «Compliance-safe AI»
+  - feature #4 заменён на «Compliance-safe общение», +2 строки compare table
+  - fictitious reviews удалены (placeholder + CTA на форму)
+  - FTP deploy через Python wrapper (escape-safe для спецсимволов в FTP_PASS)
+- [x] **🔴 KB canonical /docs (Сырым жёстко 2026-05-21)**: KB строится ИСКЛЮЧИТЕЛЬНО из `obsidian-vault/docs/`. Reference/, Google диска/, .kb_extracted/ — НЕ источник
+  - `kb_chunks` PURGE 2314 → 0, reingest из 8 /docs файлов → 242 chunks
+  - 6 PDF (101/104/106/109/214/503RU) + InCruises Ranks.md + Presentation Script.md
+  - 90% noise (MLM-книги корпус + битые PDF→txt extracts) удалены
+  - Matching-бонус теперь в KB с конкретикой (100% / $200 личный / $600 командный)
+  - Правило 3 веток в KB (40%-cap → floor=3 ноги для SMD+)
+- [x] **🔴 Правило 3 веток** (Сырым 2026-05-21): для ЛЮБОЙ квалификации SMD+ — минимум 3 активные ветки (Правило 40% → 40+40+20=100%). Floor одинаковый для всех рангов, не градирован
+- [x] **🔴 Cleanup репо** (2026-05-21): 101MB → 69MB (-32MB). 6 PDF в корне, 4 abandoned worktrees, .tmp, .kb_extracted, пустая sessions, 10 файлов archive
+- [x] **🔴 Сайра TG reactivate** (2026-05-21): Сайра написала Stop 2026-05-20 (тестировала intent, не opt-out). Reset `ai_state=NULL`, `do_not_contact=false` + cleanup history. 4 turns smoke после: 3/4 PASS, 1 double-reply bug, 1 generic Matching (закрыто KB reingest)
+- [ ] **🔴 Compliance Приоритет 2.1 — Consent flow audit** (отложено):
+  - WF9 dispatch + Followup Scheduler + Conversation Loop на `consent_at IS NOT NULL` gate перед proactive AI-сообщением (ст.14-15)
+  - ст.18 2-летний NDA — информационно (offboard scenario не реализуется сейчас)
+- [ ] **🔴 Smoke verify KB reingest** (next session): Сырым/Сайра через TG: «Матчинг-бонус?», «Сколько веток?», «Первый ранг?». Если AI generic — patch промпт на «cite plan rates verbatim»
+- [ ] **🔴 Reactivate-feature TG** (Phase C2 блокер): команда `/start` или partner-facing UI reactivate. Иначе любой тест STOP = выпадение из системы навсегда
+- [ ] **🟡 Double-reply bug**: 2 inbound от same chat_id в <10 sec → 2 ответа. Debounce в WF или lock в RPC
+- [ ] **🟡 Сайре 10 Q + 6 reviews** (опросник готов в `docs/Saira Interview Questions.md`): структура веток (квалификация на каждой), 7-12 касаний, цифры InCruises corp, личная история, 4 возражения, настоящие отзывы вместо fictitious
 - [ ] **🟡 Миграция `contacts.country`** — `ALTER TABLE contacts ADD COLUMN country TEXT` для geo-fence PL по структуре, не только AI-text detection. Опциональный backfill из `leads.country` по lead_id
-- [ ] **🟡 KB ingest + smoke** — `python scripts/push_kb_chunks_to_webhook.py` → 2314 → ~2400+
 - [ ] **🟡 RAG improvements** (top_k 5→10, query expansion, anti-loop, escalation на self-detected no_kb)
-- [ ] Phase C2 — Эскалация (1-2 сессии). Блокер: compliance + KB-fill
+- [ ] Phase C2 — Эскалация (1-2 сессии). Блокеры: reactivate-feature + double-reply
 - [ ] Contact import (CSV/VCF/Google)
 - [ ] **Future:** contact → lead path (когда партнёр запускает презентацию для контакта из телефонной книги, нужен workflow для создания связанного лида)
 
