@@ -1,10 +1,10 @@
 #!/usr/bin/env python3
-"""Chunk all KB sources and POST to WF14 ingest webhook in batches.
+"""Chunk KB sources from obsidian-vault/docs/ and POST to WF14 ingest webhook.
 
-Sources:
-  obsidian-vault/reference/*.md + obsidian-vault/projects/AI Agent Answers.md
-  .kb_extracted/*.txt  (extracted from PDFs by pdftotext)
-  Файлы с Google диска/*.txt  (MLM books + Comp Plan)
+KB rule (2026-05-21, Сырым): canonical sources are ONLY obsidian-vault/docs/.
+reference/, projects/, .kb_extracted/, Файлы с Google диска/ — НЕ источник KB.
+Meta-files (README.md, Questions for Saira.md, Saira Interview Questions.md)
+исключены — содержат TODO/драфт, не факты.
 
 Chunking: ~1000 chars on paragraph/blank-line boundaries.
 Idempotent: DELETE existing rows for source before re-ingest.
@@ -28,20 +28,14 @@ MAX_CHARS = 1000
 BATCH_SIZE = 80
 
 KB_SOURCES = [
-    "obsidian-vault/reference/InCruises Knowledge Base.md",
-    "obsidian-vault/reference/InCruises Compensation Plan.md",
-    "obsidian-vault/reference/InCruises FAQ.md",
-    "obsidian-vault/reference/Business Rules.md",
-    "obsidian-vault/projects/AI Agent Answers.md",
-    ".kb_extracted/101RU_SIMPLE_COMPANY_PRESENTATION.txt",
-    ".kb_extracted/109RU_INCOME_AND_INCENTIVE_OVERVIEW.txt",
-    ".kb_extracted/214RU_INCOME_AND_INCENTIVE_GUIDE.txt",
-    "Файлы с Google диска/Big Al reveals his secrets.txt",
-    "Файлы с Google диска/Don Faila_s 10 Lessons on Napkins.txt",
-    "Файлы с Google диска/John Kalench Be the best you can be in MLM.txt",
-    "Файлы с Google диска/Rendy.txt",
-    "Файлы с Google диска/jim_rohn_vitaminy-dlya-uma.txt",
-    "Файлы с Google диска/Компенсационный (бизнес-план) план компании InCruises (2).txt",
+    "obsidian-vault/docs/101RU_SIMPLE_COMPANY_PRESENTATION.md",
+    "obsidian-vault/docs/104RU_3.2_INDEPENDENT_PARTNER_AGREEMENT.md",
+    "obsidian-vault/docs/106RU_3.2_MEMBER_AGREEMENT.md",
+    "obsidian-vault/docs/109RU_INCOME_AND_INCENTIVE_OVERVIEW.md",
+    "obsidian-vault/docs/214RU_INCOME_AND_INCENTIVE_GUIDE.md",
+    "obsidian-vault/docs/503RU_PAYMENT_AGREEMENT.md",
+    "obsidian-vault/docs/InCruises Ranks.md",
+    "obsidian-vault/docs/Presentation Script.md",
 ]
 
 def strip_md_noise(text: str) -> str:

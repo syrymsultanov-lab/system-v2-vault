@@ -16,15 +16,15 @@ SYSTEM V2.1 — AI-powered lead pipeline для MLM команды InCruises (25
 - Automation: n8n на Hostinger VPS
 - Dashboard: 9 вкладок на live данных, хостится на Hostinger
 
-## 19 таблиц (актуально на 2026-05-16, сверено `list_tables`)
+## 20 таблиц (актуально на 2026-05-17, сверено `list_tables`)
 
 **Ядро (7):** `partners`, `leads`, `lead_messages`, `lead_channels`, `ai_jobs`, `templates`, `events_log`
 
 **Партнёрские (7):** `contacts` (телефонная книга), `tasks`, `partner_settings` (1:1), `partner_integrations`, `training_modules`/`lessons`/`progress`
 
-**Сообщения (2):** `inbound_messages` (WF5/WF6 пишет/читает), `outbound_messages` (WF9 отправляет)
+**Сообщения (2):** `inbound_messages` (Inbound + WF5/WF6 пишет/читает), `outbound_messages` (Inbound reactive пишет status=sent inline, WF9 диспатчит proactive cron)
 
-**AI-pipeline (3):** `lead_events` (имеет `event_type` колонку!), `ai_recommendations` (Phase B bridge с `processed_at` idempotency), `ai_job_runs` (не используется активно)
+**AI-pipeline (4):** `lead_events` (имеет `event_type` колонку!), `ai_recommendations` (Phase B bridge с `processed_at` idempotency), `ai_job_runs` (job_id nullable — Conversation Loop + Inbound reactive пишут cost), `kb_chunks` (RAG: vector(1536), RPC `match_kb_chunks`, 2289 chunks из 13 KB-источников)
 
 **Для деталей колонок** — `mcp__supabase__list_tables(verbose=true)`. CLAUDE.md не источник истины по колонкам.
 
@@ -33,7 +33,7 @@ SYSTEM V2.1 — AI-powered lead pipeline для MLM команды InCruises (25
 - `partners INSERT → partner_settings` (дефолты)
 - `leads INSERT → ai_jobs queued` (qualify_lead — WF3 cron подхватывает)
 
-## AI-pipeline (Phase B production 2026-05-04, Plan B intake 2026-05-05)
+## AI-pipeline (Phase B production 2026-05-04, Plan B intake 2026-05-05, Phase C1 reactive+RAG 2026-05-17)
 ```
 landing form (app.js POST) → WF1 webhook /system-v2/lead-intake →
   Normalize → Find Existing → If dup? Use Existing : Insert Lead →
@@ -44,6 +44,23 @@ WF3 cron 2 мин:  claim_next_ai_job RPC → OpenAI → score+temp+next_action+
 WF4 cron 2 мин:  fetch ai_recommendations[processed_at=null] → tasks INSERT → mark processed
                  → events_log row (actor='system') → TG notify (60_Notify_TG_Group, non-blocking)
 WF13 cron 5 мин: reset_stuck_ai_jobs → running > 10 мин → failed
+
+# Phase C1 — Conversational AI (sandbox 2026-05-17)
+TG Conversation Inbound (webhook /tg-inbound, reactive ~3-5s end-to-end):
+  parse update → claim chat_id → find contact → check consent →
+  insert inbound_messages → touch contact (last_inbound_at) →
+  fetch partner/settings/history → embed query (text-embedding-3-small) →
+  match_kb_chunks(top_k=5) → build prompt with RAG context →
+  OpenAI gpt-4.1-mini → parse JSON → if reply ok:
+    TG sendMessage → insert outbound (status=sent) →
+    log ai_job_runs (cost) → update contact (ai_state, last_outbound_at, updated_at)
+AI Conversation Loop cron 2 мин (proactive — приветствия, followup):
+  claim_next_conversation RPC → fetch ctx → OpenAI → outbound dry_run →
+  WF9 dispatch picks up
+WF9 dispatch cron 1 мин (proactive only): fetch outbound dry_run/queued →
+  lookup contact tg_chat_id → TG sendMessage → mark sent / skipped
+Outbound Followup Scheduler cron 1ч: schedule_followups RPC (+24h/+72h/+7d → cold)
+AI Budget Watchdog cron daily 09:00: get_ai_cost_summary → TG alert if ≥80% или exceeded
 ```
 
 **RLS:** все 19 own-only через `partner_id IN (SELECT id FROM partners WHERE user_id = auth.uid())`. Исключение: `partners` SELECT открыт authenticated. `templates` с `partner_id IS NULL` системные, видны всем.

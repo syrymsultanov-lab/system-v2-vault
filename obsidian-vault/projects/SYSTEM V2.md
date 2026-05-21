@@ -8,7 +8,7 @@ hosting: hostinger
 domain: sairateam.com
 stack: static HTML/CSS/JS
 created: 2025-11-01
-updated: 2026-05-18
+updated: 2026-05-20-evening
 ---
 
 # SYSTEM V2.1 — AI-Powered MLM Pipeline
@@ -82,8 +82,28 @@ Landing (sairateam.com) → Supabase (leads) → n8n (VPS) → AI Agent → Chan
   - Bugs fixed in TG Conversation Inbound WF: media→escalation (нода 45-49), structured output logging в `ai_job_runs`, race Inbound↔Loop double-fire (`50_Touch_Contact` + `115_Update_Contact` bump `updated_at`), income hedge в промпте (обязательная оговорка при цитировании сумм), no-repeat-greeting, STOP intent case-insensitive с 13 синонимами, `95_If_Reply_OK` пропускает `action='stop'`, **history fetch unified на `tg_chat_id`** (был broken на контактах без `messenger_handle`)
   - Backfill 77+77 строк Сырыма и 13+10 Сайры под единый numeric identifier
   - Сайрин прогон 13/14 broken (history fetch) до фикса → ждёт повторного прогона на чистом стенде
-- [ ] **Sandbox прогон #2 Сайры на чистом стенде** — 🔴 блокер Phase C2, все фиксы живые
-- [ ] Phase C2 — Эскалация (1-2 сессии). Блокер: sandbox #2
+- [x] **Sandbox прогон #2 Сайры** (2026-05-18 after-fix 08:08-09:34): 16 диалогов, conf 0.91, 0 эскалаций. Audit 2026-05-19 показал критический KB gap: 🔴 **Bronze rank hallucination**, 4 generic loops на SOP первых шагов, 7 generic на презентациях, 0/16 эскалаций при минимум 2 явных no_kb. Phase C1 НЕ готов к C2 — нужен KB gap fill
+- [x] **Создана `obsidian-vault/docs/` — эталонная KB-папка** (2026-05-19). 5 файлов: README + InCruises Ranks (12 рангов + расчёты товарооборота) + Presentation Script (4 готовых 45-сек + структура SOP) + Questions for Saira (35 открытых Q) + 101RU_SIMPLE_COMPANY_PRESENTATION (официальный PDF InCruises конвертация). `Файлы с Google диска/` определён как сырьё (не эталон)
+- [x] **101RU официальный источник интегрирован** (2026-05-19 вечер): 12 рангов InCruises подтверждены (Marketing Director → Royal Ambassador BoD), Bronze/Silver hallucination закрыта, удержание ранга = ежемесячный пересчёт, статусы Партнёр vs Член-Партнёр уточнены, расчёт товарооборота команды (Premium $500/$250, Classic $200/$100)
+- [x] **6 официальных InCruises документов в `docs/`** (2026-05-20): 104RU Партнёрское Соглашение, 106RU Членское Соглашение, 109RU Обзор доходов, 214RU Руководство по доходам, 503RU Платёжное Соглашение (плюс 101RU из вчера). Audit: ~25/35 Q to Saira закрыты документами. STARTER $50/$50 подтверждён (Сайру не дёргать), DAB = $20-$50 (101RU $20-$150 = ошибка перевода). Новое в KB: Active vol requirement для MD+ ($200/30д..$2400/365д), ИКБ ≥65%, Quick Start $500
+- [x] **🔴 Compliance fixes Приоритет 1 — промпт `80_Build_Prompt`** (2026-05-20 vечер): patch v1+v2 deployed через `scripts/patch_inbound_compliance_hard_rules.py` (idempotent). 6 правил живы в проде:
+  - ст.17(в) запрет персональных прогнозов «ты заработаешь $X»
+  - ст.17(в) hand-off для проекций «если приведу N — сколько»
+  - ст.17(г) template-отказ на «сколько Сайра/Сырым зарабатывает» + цитата плана + hedge
+  - ст.13 hand-off Membership closing (escalate=ready_to_pay)
+  - Pass-through citation pattern «(по 109RU/214RU)»
+  - 106RU geo-fence PL (⚠ требует миграцию `contacts.country`)
+  - Smoke v1 5/5 PASS (после поправки vердикта по Q4), smoke v2 3/3 compliance-safe
+- [ ] **🔴 Compliance fixes Приоритет 2 — лендинг + consent audit:**
+  - **`index.html` audit** — grep на promo-claims дохода и явные обещания
+  - **Consent flow audit** — WF9 dispatch + Followup Scheduler + Conversation Loop на `consent_at IS NOT NULL` gate перед proactive AI-сообщением (ст.14-15)
+  - **ст.18 2-летний NDA** — информационно (offboard scenario не реализуется сейчас)
+- [ ] **🔴 Docs rewrite** (после compliance): закрыть Q3/Q15-19/Q22/Q27/Q37/Q38-39 в `Questions for Saira.md`, обновить `InCruises Ranks.md` под Active vol requirements + ИКБ + Quick Start
+- [ ] **🟡 Сайре 10 оставшихся Q** (структура «ног» SMD→ED, формулировки возражений, личные истории)
+- [ ] **🟡 Миграция `contacts.country`** — `ALTER TABLE contacts ADD COLUMN country TEXT` для geo-fence PL по структуре, не только AI-text detection. Опциональный backfill из `leads.country` по lead_id
+- [ ] **🟡 KB ingest + smoke** — `python scripts/push_kb_chunks_to_webhook.py` → 2314 → ~2400+
+- [ ] **🟡 RAG improvements** (top_k 5→10, query expansion, anti-loop, escalation на self-detected no_kb)
+- [ ] Phase C2 — Эскалация (1-2 сессии). Блокер: compliance + KB-fill
 - [ ] Contact import (CSV/VCF/Google)
 - [ ] **Future:** contact → lead path (когда партнёр запускает презентацию для контакта из телефонной книги, нужен workflow для создания связанного лида)
 
