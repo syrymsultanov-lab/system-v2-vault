@@ -8,7 +8,7 @@ hosting: hostinger
 domain: sairateam.com
 stack: static HTML/CSS/JS
 created: 2025-11-01
-updated: 2026-05-21
+updated: 2026-05-22
 ---
 
 # SYSTEM V2.1 — AI-Powered MLM Pipeline
@@ -112,6 +112,14 @@ Landing (sairateam.com) → Supabase (leads) → n8n (VPS) → AI Agent → Chan
 - [x] **🔴 Правило 3 веток** (Сырым 2026-05-21): для ЛЮБОЙ квалификации SMD+ — минимум 3 активные ветки (Правило 40% → 40+40+20=100%). Floor одинаковый для всех рангов, не градирован
 - [x] **🔴 Cleanup репо** (2026-05-21): 101MB → 69MB (-32MB). 6 PDF в корне, 4 abandoned worktrees, .tmp, .kb_extracted, пустая sessions, 10 файлов archive
 - [x] **🔴 Сайра TG reactivate** (2026-05-21): Сайра написала Stop 2026-05-20 (тестировала intent, не opt-out). Reset `ai_state=NULL`, `do_not_contact=false` + cleanup history. 4 turns smoke после: 3/4 PASS, 1 double-reply bug, 1 generic Matching (закрыто KB reingest)
+- [x] **🔴 KB rewrite ЛИЧНО/КОМАНДНО/MIX format** (2026-05-22):
+  - 11 Q&A блоков в `docs/InCruises Ranks.md` переписаны: ЛИЧНО (сам активируешь) / ЧЕРЕЗ КОМАНДУ (N веток, pkg cap) / MIX + recurring. Все упоминания «%» удалены, заменены на числа пакетов («не более 6 classic ИЛИ 2 premium на ветку»)
+  - Q&A «Первый шаг после регистрации» добавлен (3 статуса)
+  - `docs/Company Facts.md` создан — 4 Q&A корпоративных stats (193 страны, $350M DSN, 718K passengers, $500M+ бонусов, 4000+ Директоров, Mercy Ships)
+  - Patch `80_Build_Prompt` v2 (`scripts/patch_inbound_format_packages.py`): rule «НИКОГДА не упоминай %», rule «ОБЯЗАТЕЛЬНО разделяй 3 пути», few-shot MD/SMD переписаны. 104RU compliance сохранён
+  - KB reingest 242 → 257 chunks (Ranks 14→26, +Company Facts 3)
+  - Smoke verify Сырым: AI теперь корректно разделяет ЛИЧНО/КОМАНДНО/MIX, проценты ушли
+  - Commit `e0a1df0`, pushed → origin/main
 - [ ] **🔴 Compliance Приоритет 2.1 — Consent flow audit** (отложено):
   - WF9 dispatch + Followup Scheduler + Conversation Loop на `consent_at IS NOT NULL` gate перед proactive AI-сообщением (ст.14-15)
   - ст.18 2-летний NDA — информационно (offboard scenario не реализуется сейчас)
