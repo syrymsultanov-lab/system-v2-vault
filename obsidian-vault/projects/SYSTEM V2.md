@@ -8,7 +8,7 @@ hosting: hostinger
 domain: sairateam.com
 stack: static HTML/CSS/JS
 created: 2025-11-01
-updated: 2026-05-22
+updated: 2026-05-23
 ---
 
 # SYSTEM V2.1 — AI-Powered MLM Pipeline
@@ -120,16 +120,27 @@ Landing (sairateam.com) → Supabase (leads) → n8n (VPS) → AI Agent → Chan
   - KB reingest 242 → 257 chunks (Ranks 14→26, +Company Facts 3)
   - Smoke verify Сырым: AI теперь корректно разделяет ЛИЧНО/КОМАНДНО/MIX, проценты ушли
   - Commit `e0a1df0`, pushed → origin/main
-- [ ] **🔴 Compliance Приоритет 2.1 — Consent flow audit** (отложено):
-  - WF9 dispatch + Followup Scheduler + Conversation Loop на `consent_at IS NOT NULL` gate перед proactive AI-сообщением (ст.14-15)
-  - ст.18 2-летний NDA — информационно (offboard scenario не реализуется сейчас)
-- [ ] **🔴 Smoke verify KB reingest** (next session): Сырым/Сайра через TG: «Матчинг-бонус?», «Сколько веток?», «Первый ранг?». Если AI generic — patch промпт на «cite plan rates verbatim»
-- [ ] **🔴 Reactivate-feature TG** (Phase C2 блокер): команда `/start` или partner-facing UI reactivate. Иначе любой тест STOP = выпадение из системы навсегда
-- [ ] **🟡 Double-reply bug**: 2 inbound от same chat_id в <10 sec → 2 ответа. Debounce в WF или lock в RPC
-- [ ] **🟡 Сайре 10 Q + 6 reviews** (опросник готов в `docs/Saira Interview Questions.md`): структура веток (квалификация на каждой), 7-12 касаний, цифры InCruises corp, личная история, 4 возражения, настоящие отзывы вместо fictitious
-- [ ] **🟡 Миграция `contacts.country`** — `ALTER TABLE contacts ADD COLUMN country TEXT` для geo-fence PL по структуре, не только AI-text detection. Опциональный backfill из `leads.country` по lead_id
+- [x] **🔴 Reviews live + KB** (2026-05-23): 6 партнёров из официального журнала inCruises (Бактыгуль, Ботагоз, Сымбат, Надыра, Лаура, Мээрим). Webp конверсия PIL (smart top-crop, <100KB), `docs/Reviews.md` структурированный с compliance rules, `reviews.html` Grid 3-col RU/EN/KZ, KB reingest 257→267 chunks (+10 Reviews), FTP deploy 200 OK. Commit `122e473`
+- [x] **🔴 Production launch gates** (2026-05-23): 4 техфикса перед real-traffic phase:
+  - **Discovery: consent gate (ст.14-15) уже работал** — `claim_next_conversation` + `schedule_followups` фильтруют `WHERE ai_consent = true`, default `contacts.ai_consent=false`. Audit trigger `stamp_ai_consent_at` закрыл только timestamp consistency
+  - Migration `contacts.country` + partial index (для geo-fence PL)
+  - RPC `should_process_inbound_now(uuid)` — closes double-reply race (latest msg owns turn)
+  - Trigger `reactivate_contact_on_inbound` (AFTER INS) — `/start`, `старт`, `реактив`, `reactivate`, `возобновить` → reset `ai_state=null`, `do_not_contact=false`
+  - WF TG Inbound patch — 3 ноды: `42_Wait_Debounce(1.5s)` → `43_Debounce_Check(RPC)` → `44_If_Latest` (FALSE → workflow ends)
+  - Smoke: consent_audit PASS, reactivate PASS. Commit `8978c6e`
+- [x] **🔴 Launch v2 — Whisper + Interview + Templates + Channel split** (2026-05-23):
+  - `scripts/transcribe_audio.py` (OpenAI Whisper API, .mp3/.m4a/.ogg → .md transcript, idempotent, 25MB limit + ffmpeg hint)
+  - `obsidian-vault/projects/Saira Interview Plan.md` v2 — 7 блоков × 6-8 Q ≈ 50 Q, 40-60 мин (расширены возражения 4→10, новые блоки: идеальный кандидат + open Q for AI)
+  - `obsidian-vault/projects/WhatsApp Outreach Template.md` v2 — 3 шаблона A/B/C с TG honesty (AI только в Telegram до WABA)
+  - Migration `tasks.type` CHECK расширен + trigger `classify_task_by_messenger` (TG → `ai_lead_review`, WA/IG → `manual_outreach`, preserves explicit types)
+  - Smoke classify PASS. Commit `f04b28d`
+- [ ] **🔴 Сайра interview сессия** (Сырым делает): провести 40-60 мин по `Saira Interview Plan.md`, положить аудио в `reference/interviews/raw/`, дать команду «транскрибируй» → KB rewrite v3 (Сайрина voice + 10 возражений + личная история + ideal candidate)
+- [ ] **🔴 Рассылка для real-traffic** (Сайра делает): 10-15 знакомых по шаблону A/B/C → audit реальных лидов в дашборде → first AI run на не-sandbox данных
 - [ ] **🟡 RAG improvements** (top_k 5→10, query expansion, anti-loop, escalation на self-detected no_kb)
-- [ ] Phase C2 — Эскалация (1-2 сессии). Блокеры: reactivate-feature + double-reply
+- [ ] **🟡 Form → TG bot bridge** (вариант C пропущен 2026-05-23): после submit формы → deep-link `t.me/incruises_ai_bot?start=lead_<id>` → бот создаёт contact + ai_consent=true (consent с формы). Сейчас лиды без bridge: AI ждёт когда лид сам напишет в бота
+- [ ] **🟡 Dashboard visual separation**: filter `task.type='manual_outreach'` vs `ai_lead_review` (UI работа)
+- [ ] **🟡 Schema drift cleanup** (CLAUDE.md vs DB): `ai_job_runs.cost_usd` отсутствует (нет AI Budget Watchdog source), `leads.full_name` не существует, `contacts.ai_consent_at` (не `consent_at` как в memories)
+- [ ] Phase C2 — Эскалация (1-2 сессии). Блокеры теперь только Сайра interview (для AI voice quality)
 - [ ] Contact import (CSV/VCF/Google)
 - [ ] **Future:** contact → lead path (когда партнёр запускает презентацию для контакта из телефонной книги, нужен workflow для создания связанного лида)
 

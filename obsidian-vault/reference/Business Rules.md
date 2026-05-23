@@ -1,7 +1,7 @@
 ---
 tags: [rules, non-negotiable, compliance]
 project: system-v2
-updated: 2026-05-21
+updated: 2026-05-23
 ---
 
 # Бизнес-правила (нарушать нельзя)
@@ -17,7 +17,7 @@ updated: 2026-05-21
 6. **Запрет на персональный доход** (104RU ст.17(г)): «не раскрывать информацию о размере своего комиссионного дохода». 214RU дублирует: «Мы запрещаем показывать размер заработанной компенсации для демонстрации работы бизнеса». AI **не цитирует** доход Сайры/Сырыма/любого партнёра. Не приводит примеры дохода («Сайра делает $X», «партнёр А заработал $Y»). Можно: structural bonus («TLB для MD = $300», «DAB PREMIUM = $50») со ссылкой на Руководство по доходам. Нельзя: «ты заработаешь X», «партнёры делают Y»
 7. **Запрет на гипотетические прогнозы** (214RU «Легальная Компенсация»): «запрещаем давать гипотетические прогнозы доходов или приводить примеры таких доходов». AI не строит «если у тебя будет N партнёров, ты получишь $X»
 8. **Позиционирование sairateam.com + AI = lead qualification tool** (104RU ст.13 серая зона: запрещены свои «бизнес-инструменты, веб-страницы, веб-сайты для продвижения продуктов inCruises»). Спасает позиционирование: лендинг + AI **квалифицируют лида и передают на партнёра**. Финальная презентация Membership + регистрация — через official inCruises material (101RU PDF и т.д.), не через наш AI/landing
-9. **Consent перед proactive AI-сообщением** (104RU ст.14-15: запрет spam + автоматизированных сообщений). Reactive (lead инициирует диалог) — OK без consent. **Proactive** (Outbound Followup Scheduler, AI Conversation Loop, dispatch) требует `contacts.consent_at IS NOT NULL`. Audit WF9/Followup/Loop на эту проверку
+9. **Consent перед proactive AI-сообщением** (104RU ст.14-15: запрет spam + автоматизированных сообщений). Reactive (lead инициирует диалог) — OK без consent. **Proactive** (Outbound Followup Scheduler, AI Conversation Loop, dispatch) требует `contacts.ai_consent = true`. **Реализовано (2026-05-23):** `claim_next_conversation` + `schedule_followups` оба фильтруют `WHERE ai_consent = true`. Default `contacts.ai_consent = false`. Новый контакт не получит proactive AI без явного opt-in. Trigger `stamp_ai_consent_at` автостамп timestamp для audit trail
 10. **Конфиденциальность данных партнёра** (104RU ст.18): списки лидов/контактов = коммерческая тайна inCruises, 2 года NDA после прекращения партнёрства Сайры. RLS own-only обеспечивает, при offboard — обязательство передать inCruises
 11. **Польша исключена** (106RU): inCruises не принимает Members из Польши. Лиды с польским номером — флаг
 12. Scarcity tactics запрещены ("мест ограничено")
@@ -28,7 +28,11 @@ updated: 2026-05-21
 15a. **KB AI-агента = ТОЛЬКО `obsidian-vault/docs/`** (жёстко, Сырым 2026-05-21). Никакие другие файлы из vault (reference/, Файлы с Google диска/, .kb_extracted/, корень) — НЕ источник для RAG. Перед ingest: `KB_SOURCES` в `scripts/push_kb_chunks_to_webhook.py` должен содержать ТОЛЬКО пути в /docs. Перенести нужное в /docs (с `verified_by` + `verified_at` frontmatter), потом ingest
 15b. **Правило 3 веток** (Сырым 2026-05-21): для квалификации ЛЮБОГО ранга от Marketing Director и выше — минимум 3 активные ветки партнёров. Это вытекает из **Правила 40%** (214RU): max 40% квалифицируемого объёма из одной партнёрской команды. С 2 ветками = max 80% объёма → недостижимо. Floor одинаковый, не градирован по рангам. AI цитирует «3 ветки + правило 40% + общий GV X»
 15c. **УТП лендинга = compliance leverage** (обновлено 2026-05-21). Старое «работает пока ты отдыхаешь» = soft passive earnings, compliance-риск. Новое = «AI-агент, обученный правилам твоей MLM-компании» + «Цитирует официальные документы дословно». Не упоминать inCruises напрямую на лендинге (ст.13). Не показывать личные результаты партнёров (ст.17г, 214RU «запрет показывать заработанную компенсацию»)
-15d. **Reactivate-feature обязательна перед broad rollout** (обнаружено 2026-05-21 на Сайре). После STOP контакт уходит в `paused + do_not_contact=true` навсегда. Любой тест STOP юзером = выпадение из системы. До broad rollout нужен `/start` reactivate либо partner-facing UI в дашборд
+15d. **Reactivate-feature обязательна перед broad rollout** (обнаружено 2026-05-21 на Сайре). После STOP контакт уходит в `paused + do_not_contact=true` навсегда. Любой тест STOP юзером = выпадение из системы. **Реализовано (2026-05-23):** trigger `reactivate_contact_on_inbound` (AFTER INSERT на inbound_messages). Детектит `/start`, `старт`, `реактив`, `reactivate`, `возобновить`, `возобновляю` → reset `ai_state=null`, `do_not_contact=false` для paused/DNC/cold. Smoke verify PASS
+
+15e. **Channel split AI-агента (TG=AI, WA/IG=manual)** (Сырым 2026-05-23). До WABA AI работает только в Telegram. Лиды в форме выбирают `messenger` (telegram/whatsapp/instagram). После AI квалификации task для Сайры классифицируется: `task.type='ai_lead_review'` (TG — AI уже общается, Сайра review) vs `task.type='manual_outreach'` (WA/IG — Сайра пишет вручную). Реализовано: trigger `classify_task_by_messenger` (BEFORE INSERT). После WABA — channel-split логика отменяется
+
+15f. **Form → AI bridge НЕ реализован (выбор 2026-05-23)** — после submit формы AI не пишет лиду первым. Лид сам пишет в `@incruises_ai_bot` (reactive only) ИЛИ Сайра инициирует контакт через task. Future вариант: deep-link на бот с `?start=lead_<id>` создаёт contact + ai_consent=true (consent с чекбокса формы) — отложено
 
 ## AI-агент (Phase C model, обновлено 2026-05-16)
 15. **Полный автомат с consent-gate.** Партнёр даёт одно согласие на контакт (`contacts.ai_consent=true`) → AI ведёт диалог автономно через WA/TG. **Не полуавтомат с черновиками.** Эскалация на партнёра по триггерам: negative sentiment, `intent: ready_to_pay`, low confidence, вопрос вне БЗ, медиа-сообщение (картинка/голос/файл)
