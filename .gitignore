@@ -44,3 +44,14 @@ obsidian-vault/reference/reviews/raw/*.mov
 obsidian-vault/reference/reviews/raw/*.m4a
 obsidian-vault/reference/reviews/raw/*.ogg
 obsidian-vault/reference/reviews/raw/*.mp3
+
+# Interviews RAW аудио — оригиналы (транскрипты .md коммитятся)
+obsidian-vault/reference/interviews/raw/*.mp3
+obsidian-vault/reference/interviews/raw/*.m4a
+obsidian-vault/reference/interviews/raw/*.mp4
+obsidian-vault/reference/interviews/raw/*.ogg
+obsidian-vault/reference/interviews/raw/*.wav
+obsidian-vault/reference/interviews/raw/*.webm
+obsidian-vault/reference/interviews/raw/*.flac
+obsidian-vault/reference/interviews/raw/*.mpga
+obsidian-vault/reference/interviews/raw/*.mpeg
