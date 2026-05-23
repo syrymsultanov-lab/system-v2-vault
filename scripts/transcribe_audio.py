@@ -15,11 +15,9 @@ Max file size: 25 MB (Whisper API limit). For longer — split with ffmpeg.
 Idempotent: skips files where transcript already exists (unless --force).
 """
 import json
-import mimetypes
+import subprocess
 import sys
-import urllib.error
-import urllib.request
-import uuid
+import time
 from pathlib import Path
 
 ROOT = Path(__file__).parent.parent
@@ -42,21 +40,6 @@ LANGUAGE = "ru"
 SUPPORTED = {".mp3", ".m4a", ".mp4", ".ogg", ".wav", ".webm", ".mpga", ".mpeg", ".flac"}
 
 
-def build_multipart(file_path: Path, fields: dict[str, str]) -> tuple[bytes, str]:
-    boundary = f"----WebKitFormBoundary{uuid.uuid4().hex}"
-    body = bytearray()
-    for k, v in fields.items():
-        body += f"--{boundary}\r\n".encode()
-        body += f'Content-Disposition: form-data; name="{k}"\r\n\r\n{v}\r\n'.encode()
-    body += f"--{boundary}\r\n".encode()
-    body += f'Content-Disposition: form-data; name="file"; filename="{file_path.name}"\r\n'.encode()
-    mime = mimetypes.guess_type(file_path.name)[0] or "application/octet-stream"
-    body += f"Content-Type: {mime}\r\n\r\n".encode()
-    body += file_path.read_bytes()
-    body += f"\r\n--{boundary}--\r\n".encode()
-    return bytes(body), boundary
-
-
 def transcribe(file_path: Path) -> str:
     size_mb = file_path.stat().st_size / 1024 / 1024
     if size_mb > 25:
@@ -65,37 +48,43 @@ def transcribe(file_path: Path) -> str:
             "Split via ffmpeg: ffmpeg -i input.mp3 -f segment -segment_time 600 out_%03d.mp3"
         )
 
-    fields = {
-        "model": MODEL,
-        "language": LANGUAGE,
-        "response_format": "verbose_json",
-        "temperature": "0",
-    }
-    body, boundary = build_multipart(file_path, fields)
-
-    req = urllib.request.Request(
+    cmd = [
+        "curl", "-sS", "--fail-with-body",
+        "--max-time", "900",
+        "--retry", "3",
+        "--retry-delay", "5",
+        "--retry-connrefused",
+        "-X", "POST",
         WHISPER_URL,
-        data=body,
-        headers={
-            "Authorization": f"Bearer {OPENAI_KEY}",
-            "Content-Type": f"multipart/form-data; boundary={boundary}",
-        },
-        method="POST",
-    )
-    try:
-        with urllib.request.urlopen(req, timeout=600) as r:
-            data = json.loads(r.read())
-    except urllib.error.HTTPError as e:
-        raise RuntimeError(f"Whisper error {e.code}: {e.read().decode()}") from e
+        "-H", f"Authorization: Bearer {OPENAI_KEY}",
+        "-F", f"file=@{file_path}",
+        "-F", f"model={MODEL}",
+        "-F", f"language={LANGUAGE}",
+        "-F", "response_format=verbose_json",
+        "-F", "temperature=0",
+    ]
 
-    out_lines = [f"# Transcript: {file_path.name}", f"Duration: {data.get('duration', 0):.1f}s", ""]
-    if "segments" in data:
-        for seg in data["segments"]:
-            ts = f"[{seg['start']:.1f}-{seg['end']:.1f}]"
-            out_lines.append(f"{ts} {seg['text'].strip()}")
-    else:
-        out_lines.append(data.get("text", ""))
-    return "\n".join(out_lines)
+    last_err = ""
+    for attempt in (1, 2, 3):
+        try:
+            res = subprocess.run(cmd, capture_output=True, text=True, encoding="utf-8", timeout=1000)
+            if res.returncode == 0:
+                data = json.loads(res.stdout)
+                out_lines = [f"# Transcript: {file_path.name}", f"Duration: {data.get('duration', 0):.1f}s", ""]
+                if "segments" in data:
+                    for seg in data["segments"]:
+                        ts = f"[{seg['start']:.1f}-{seg['end']:.1f}]"
+                        out_lines.append(f"{ts} {seg['text'].strip()}")
+                else:
+                    out_lines.append(data.get("text", ""))
+                return "\n".join(out_lines)
+            last_err = res.stderr or res.stdout
+        except (subprocess.TimeoutExpired, json.JSONDecodeError) as e:
+            last_err = str(e)
+        if attempt < 3:
+            print(f"    retry {attempt}/3 after error: {last_err[:200]}", flush=True)
+            time.sleep(5 * attempt)
+    raise RuntimeError(f"Whisper failed after 3 attempts: {last_err[:500]}")
 
 
 def process(file_path: Path, force: bool):

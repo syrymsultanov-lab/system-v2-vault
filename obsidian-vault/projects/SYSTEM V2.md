@@ -134,10 +134,19 @@ Landing (sairateam.com) → Supabase (leads) → n8n (VPS) → AI Agent → Chan
   - `obsidian-vault/projects/WhatsApp Outreach Template.md` v2 — 3 шаблона A/B/C с TG honesty (AI только в Telegram до WABA)
   - Migration `tasks.type` CHECK расширен + trigger `classify_task_by_messenger` (TG → `ai_lead_review`, WA/IG → `manual_outreach`, preserves explicit types)
   - Smoke classify PASS. Commit `f04b28d`
-- [ ] **🔴 Сайра interview сессия** (Сырым делает): провести 40-60 мин по `Saira Interview Plan.md`, положить аудио в `reference/interviews/raw/`, дать команду «транскрибируй» → KB rewrite v3 (Сайрина voice + 10 возражений + личная история + ideal candidate)
-- [ ] **🔴 Рассылка для real-traffic** (Сайра делает): 10-15 знакомых по шаблону A/B/C → audit реальных лидов в дашборде → first AI run на не-sandbox данных
+- [x] **🔴 Сайра interview записан** (2026-05-23 вечер): 8 m4a файлов (~58 MB / ~90 мин) по плану `Saira Interview Plan.md` v2 в `obsidian-vault/reference/interviews/raw/`. Транскрипция Block_2-8 запущена; Block_1 (8 MB) пропущен — ждёт ffmpeg downsample (winget Gyan.FFmpeg installed)
+- [x] **🔴 TG bridge — open access для 160 партнёров** (2026-05-23 вечер):
+  - Migration `tg_lead_to_contact_bridge`: trigger `create_contact_from_lead` (TG leads → contacts с form consent), RPC `link_tg_contact_by_handle` (atomic find-by-chat / link-by-handle / create-fresh), backfill 3 текущих кандидатов
+  - WF patch `20_Find_Contact` GET → POST RPC (`patch_inbound_link_or_create_contact.py`)
+  - **Open access mode:** любой TG user пишет бота → contact автосоздаётся с reactive consent → AI отвечает. Закрытие — одной строкой `ai_consent=FALSE` в RPC step 3, позже
+- [x] **🎉 First real traffic** (2026-05-23 вечер): рассылка Сырыма → 13+ inbound/outbound пар за 10 мин с 2 партнёрами (527728826, 2078661150). Sample: «Как сделать бизнес в Инкрузес» → AI ответил из KB. Латентность 4-7 сек. 3 кандидата с лендинга (Салтанат @Saltavipstar, Батима, Салтанат @Saltavip). Первый трафик с 2026-04-30
+- [x] **🔴 Bug fix — debounce IF condition** (2026-05-23 вечер): мой вчерашний patch_inbound_debounce.py имел 2 бага: (1) `leftValue: $json.body` вместо `$json` (RPC возвращает скалярный true), (2) script не делал upsert при re-run. AI 24h не отвечал. Fixed: upsert logic + leftValue `$json`. Memory `feedback_wf_patch_upsert_pattern` создать
+- [x] **🔴 Whisper transcribe — refactor curl+retry** (2026-05-23 вечер): urllib SSL абортил на 8MB Windows → curl 8.19.0 + retry 3x + max-time 900. Plus OPENAI_API_KEY rotation (Сырым revoked old). Block_2-8 транскрибируются background, Block_1 ждёт ffmpeg
+- [ ] **🔴 Saira interview processing** (next session): дождаться завершения транскрипции Block_2-8, ffmpeg-fix Block_1, разобрать по 7 блокам → 5 новых doc файлов (About Saira, Ideal Candidate, Saira AI Rules + дополнить InCruises Ranks/Presentation Script/Company Facts), patch few-shot, KB reingest
+- [ ] **🟡 Audit реальных диалогов** (next session): 13+ пар с 527728826/2078661150 + новые с рассылки. Читать полные ответы AI, найти косяки/паттерны для patch few-shot
 - [ ] **🟡 RAG improvements** (top_k 5→10, query expansion, anti-loop, escalation на self-detected no_kb)
-- [ ] **🟡 Form → TG bot bridge** (вариант C пропущен 2026-05-23): после submit формы → deep-link `t.me/incruises_ai_bot?start=lead_<id>` → бот создаёт contact + ai_consent=true (consent с формы). Сейчас лиды без bridge: AI ждёт когда лид сам напишет в бота
+- [ ] **🟡 Form → TG bot bridge deep-link** (вариант C, было пропущено): сейчас полу-bridge есть через handle-link. Полный путь: после submit → redirect `t.me/incruises_ai_bot?start=<uuid>` → бот по UUID lookup lead → contact UPDATE handle+chat_id+attribution к ref-партнёру. Сейчас все random → Сайрин partner_id default
+- [ ] **🟡 Schema-related:** trigger `create_contact_from_lead` только TG. Если WhatsApp/Insta — добавить позже
 - [ ] **🟡 Dashboard visual separation**: filter `task.type='manual_outreach'` vs `ai_lead_review` (UI работа)
 - [ ] **🟡 Schema drift cleanup** (CLAUDE.md vs DB): `ai_job_runs.cost_usd` отсутствует (нет AI Budget Watchdog source), `leads.full_name` не существует, `contacts.ai_consent_at` (не `consent_at` как в memories)
 - [ ] Phase C2 — Эскалация (1-2 сессии). Блокеры теперь только Сайра interview (для AI voice quality)

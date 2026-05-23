@@ -99,7 +99,7 @@ IF_NODE = {
             "conditions": [
                 {
                     "id": "is-latest",
-                    "leftValue": "={{ $json.body }}",
+                    "leftValue": "={{ $json }}",
                     "rightValue": True,
                     "operator": {"type": "boolean", "operation": "true", "singleValue": True},
                 }
@@ -115,14 +115,17 @@ def patch():
     nodes = wf["nodes"]
     conns = wf["connections"]
 
+    # Upsert each debounce node (add if missing, overwrite parameters if exists)
+    desired = {n["name"]: n for n in (WAIT_NODE, CHECK_NODE, IF_NODE)}
+    for i, n in enumerate(nodes):
+        if n["name"] in desired:
+            nodes[i] = desired[n["name"]]
+            print(f"  ~ updated node: {n['name']}")
     existing = {n["name"] for n in nodes}
-    if all(name in existing for name in ("42_Wait_Debounce", "43_Debounce_Check", "44_If_Latest")):
-        print("All 3 debounce nodes already exist — re-applying connections for safety.")
-    else:
-        for new_node in (WAIT_NODE, CHECK_NODE, IF_NODE):
-            if new_node["name"] not in existing:
-                nodes.append(new_node)
-                print(f"  + added node: {new_node['name']}")
+    for name, node in desired.items():
+        if name not in existing:
+            nodes.append(node)
+            print(f"  + added node: {name}")
 
     # Rewire: 40_Insert_Inbound was -> 45_If_Has_Media
     # New flow: 40_Insert_Inbound -> 42_Wait_Debounce -> 43_Debounce_Check -> 44_If_Latest
