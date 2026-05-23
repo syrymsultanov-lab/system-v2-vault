@@ -33,3 +33,14 @@ desktop.ini
 
 # Obsidian volatile state
 .obsidian/workspace.json
+
+# Reviews RAW архив — медиа (оригиналы фото/voice/video)
+obsidian-vault/reference/reviews/raw/*.jpg
+obsidian-vault/reference/reviews/raw/*.jpeg
+obsidian-vault/reference/reviews/raw/*.png
+obsidian-vault/reference/reviews/raw/*.webp
+obsidian-vault/reference/reviews/raw/*.mp4
+obsidian-vault/reference/reviews/raw/*.mov
+obsidian-vault/reference/reviews/raw/*.m4a
+obsidian-vault/reference/reviews/raw/*.ogg
+obsidian-vault/reference/reviews/raw/*.mp3

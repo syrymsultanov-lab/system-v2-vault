@@ -37,6 +37,7 @@ KB_SOURCES = [
     "obsidian-vault/docs/InCruises Ranks.md",
     "obsidian-vault/docs/Presentation Script.md",
     "obsidian-vault/docs/Company Facts.md",
+    "obsidian-vault/docs/Reviews.md",
 ]
 
 def strip_md_noise(text: str) -> str:

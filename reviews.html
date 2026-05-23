@@ -3,9 +3,120 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Отзывы — system v2</title>
+  <title>Отзывы партнёров — system v2</title>
   <link rel="icon" type="image/svg+xml" href="assets/images/favicon.svg">
   <link rel="stylesheet" href="assets/css/style.css">
+  <style>
+    .reviews-grid {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 28px;
+      margin: 48px 0;
+    }
+    @media (max-width: 960px) {
+      .reviews-grid { grid-template-columns: repeat(2, 1fr); gap: 20px; }
+    }
+    @media (max-width: 640px) {
+      .reviews-grid { grid-template-columns: 1fr; gap: 24px; }
+    }
+    .review-card {
+      background: var(--glass-strong);
+      border: 1px solid rgba(0,119,182,0.12);
+      border-radius: var(--radius-lg);
+      overflow: hidden;
+      display: flex;
+      flex-direction: column;
+      transition: transform 0.25s, box-shadow 0.25s;
+    }
+    .review-card:hover {
+      transform: translateY(-4px);
+      box-shadow: 0 16px 40px rgba(0,119,182,0.12);
+    }
+    .review-photo {
+      aspect-ratio: 1/1;
+      width: 100%;
+      object-fit: cover;
+      background: var(--breeze);
+    }
+    .review-body {
+      padding: 24px 22px 22px;
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+      flex: 1;
+    }
+    .review-name {
+      font-family: 'Playfair Display', serif;
+      font-size: 20px;
+      font-weight: 700;
+      color: var(--ocean-deep);
+      line-height: 1.25;
+    }
+    .review-rank {
+      display: inline-block;
+      font-size: 12px;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 1.2px;
+      color: var(--azure);
+      margin-bottom: 4px;
+    }
+    .review-meta {
+      font-size: 13px;
+      color: var(--text-light);
+      display: flex;
+      flex-wrap: wrap;
+      gap: 6px 14px;
+    }
+    .review-meta span::before {
+      content: '· ';
+      color: var(--sky);
+    }
+    .review-meta span:first-child::before { content: ''; }
+    .review-quote {
+      font-style: italic;
+      font-size: 15px;
+      line-height: 1.55;
+      color: var(--text-body);
+      border-left: 3px solid var(--sky);
+      padding-left: 14px;
+      margin: 6px 0 4px;
+    }
+    .review-story {
+      font-size: 14px;
+      line-height: 1.6;
+      color: var(--text-body);
+    }
+    .reviews-intro {
+      max-width: 720px;
+      margin: 0 auto 12px;
+      text-align: center;
+      font-size: 16px;
+      color: var(--text-light);
+    }
+    .reviews-source {
+      max-width: 720px;
+      margin: 0 auto 36px;
+      text-align: center;
+      font-size: 13px;
+      color: var(--text-light);
+      padding: 12px 18px;
+      background: var(--breeze);
+      border-radius: var(--radius-sm);
+    }
+    .reviews-disclaimer {
+      max-width: 720px;
+      margin: 32px auto 0;
+      text-align: center;
+      font-size: 12px;
+      color: var(--text-light);
+      line-height: 1.6;
+    }
+    .reviews-cta {
+      text-align: center;
+      margin: 48px auto 0;
+    }
+  </style>
 </head>
 <body>
 
@@ -52,28 +163,235 @@
 <section class="section" style="padding-top:120px;">
   <div class="container">
     <div class="section-label">
-      <span data-lang="ru">ОТЗЫВЫ</span>
-      <span data-lang="en">REVIEWS</span>
-      <span data-lang="kz">ПІКІРЛЕР</span>
+      <span data-lang="ru">ОТЗЫВЫ ПАРТНЁРОВ</span>
+      <span data-lang="en">PARTNER REVIEWS</span>
+      <span data-lang="kz">СЕРІКТЕСТЕР ПІКІРІ</span>
     </div>
     <div class="section-title">
-      <span data-lang="ru">Страница отзывов готовится</span>
-      <span data-lang="en">Reviews page is in preparation</span>
-      <span data-lang="kz">Пікірлер беті дайындалуда</span>
+      <span data-lang="ru">Истории партнёров команды Сайры</span>
+      <span data-lang="en">Stories from Saira's team partners</span>
+      <span data-lang="kz">Сайра командасының серіктестер тарихы</span>
     </div>
-    <div class="section-desc">
-      <span data-lang="ru">Собираем настоящие отзывы партнёров, которые уже работают через систему. Каждый отзыв проверен лично Сайрой Султановой.</span>
-      <span data-lang="en">We are collecting real reviews from partners already using the system. Every review is personally verified by Saira Sultanova.</span>
-      <span data-lang="kz">Жүйе арқылы жұмыс істеп жатқан серіктестердің шынайы пікірлерін жинап жатырмыз. Әр пікір Сайра Сұлтанованың жеке тексеруінен өтеді.</span>
+    <div class="reviews-intro">
+      <span data-lang="ru">6 партнёров команды, опубликованных в официальном журнале компании inCruises. Мамы, банкиры, преподаватели — обычные люди, которые построили необычные результаты.</span>
+      <span data-lang="en">6 team partners featured in the official inCruises company magazine. Mothers, bankers, teachers — ordinary people with extraordinary results.</span>
+      <span data-lang="kz">inCruises компаниясының ресми журналында жарияланған 6 серіктес. Аналар, банкирлер, оқытушылар — қарапайым адамдар, ерекше нәтижелер.</span>
+    </div>
+    <div class="reviews-source">
+      <span data-lang="ru">📖 Источник: официальный журнал inCruises. Все имена, фото и истории опубликованы с согласия партнёров.</span>
+      <span data-lang="en">📖 Source: official inCruises magazine. All names, photos and stories published with partner consent.</span>
+      <span data-lang="kz">📖 Дереккөз: inCruises ресми журналы. Барлық есімдер, фото және тарихтар серіктестердің келісімімен жарияланды.</span>
     </div>
 
-    <div style="max-width:600px; margin:48px auto; padding:32px; border:1px solid var(--border); border-radius:16px; text-align:center;">
-      <div style="font-size:48px; margin-bottom:16px;">📝</div>
-      <p style="font-size:16px; margin-bottom:24px;">
-        <span data-lang="ru">Хотите оставить отзыв или получить доступ к платформе?</span>
-        <span data-lang="en">Want to leave a review or get access to the platform?</span>
-        <span data-lang="kz">Пікір қалдырғыңыз келе ме немесе платформаға қол жеткізгіңіз келе ме?</span>
-      </p>
+    <div class="reviews-grid">
+
+      <!-- Бактыгуль -->
+      <article class="review-card">
+        <img src="assets/images/reviews/baktigul-k.webp" alt="Бактыгуль Кадыралиева" class="review-photo" loading="lazy" width="800" height="800">
+        <div class="review-body">
+          <div>
+            <span class="review-rank">
+              <span data-lang="ru">Партнёр с 2019</span>
+              <span data-lang="en">Partner since 2019</span>
+              <span data-lang="kz">2019-дан серіктес</span>
+            </span>
+            <div class="review-name">
+              <span data-lang="ru">Бактыгуль Кадыралиева</span>
+              <span data-lang="en">Baktigul Kadyralieva</span>
+              <span data-lang="kz">Бақтыгүл Қадыралиева</span>
+            </div>
+          </div>
+          <div class="review-meta">
+            <span data-lang="ru">Кыргызстан</span><span data-lang="en">Kyrgyzstan</span><span data-lang="kz">Қырғызстан</span>
+            <span data-lang="ru">8 круизов</span><span data-lang="en">8 cruises</span><span data-lang="kz">8 круиз</span>
+            <span data-lang="ru">Семейная ветка</span><span data-lang="en">Family team</span><span data-lang="kz">Отбасылық тармақ</span>
+          </div>
+          <blockquote class="review-quote">
+            <span data-lang="ru">Компания не только открыла стиль жизни в духе путешествий, но и сблизила нашу семью ещё сильнее.</span>
+            <span data-lang="en">The company opened not only a travel lifestyle, but brought our family even closer together.</span>
+            <span data-lang="kz">Компания тек саяхат өмір салтын ғана емес, отбасымызды одан да жақын етті.</span>
+          </blockquote>
+          <p class="review-story">
+            <span data-lang="ru">Первый партнёр своего Борд-директора и сестры — Чынаркул. За 6 лет — 8 круизов: Америка, Япония, Европа, Мексика, Доминикана, Юго-Восточная Азия. Все её братья, сёстры и близкие — партнёры и члены клуба.</span>
+            <span data-lang="en">First partner of her Board Director and sister Chinarkul. In 6 years — 8 cruises across America, Japan, Europe, Mexico, Dominican Republic, Southeast Asia. All her siblings and relatives are partners and club members.</span>
+            <span data-lang="kz">Өзінің Борд директоры әрі әпкесі Шынарқұлдың алғашқы серіктесі. 6 жылда 8 круиз: Америка, Жапония, Еуропа, Мексика, Доминикана, Оңтүстік-Шығыс Азия. Бауырлары мен туыстарының барлығы — серіктестер мен мүшелер.</span>
+          </p>
+        </div>
+      </article>
+
+      <!-- Ботагоз -->
+      <article class="review-card">
+        <img src="assets/images/reviews/botagoz-a.webp" alt="Ботагоз Айткалиева" class="review-photo" loading="lazy" width="800" height="800">
+        <div class="review-body">
+          <div>
+            <span class="review-rank">
+              <span data-lang="ru">Национальный директор</span>
+              <span data-lang="en">National Director</span>
+              <span data-lang="kz">Ұлттық директор</span>
+            </span>
+            <div class="review-name">
+              <span data-lang="ru">Ботагоз Айткалиева</span>
+              <span data-lang="en">Botagoz Aitkalieva</span>
+              <span data-lang="kz">Ботагөз Айтқалиева</span>
+            </div>
+          </div>
+          <div class="review-meta">
+            <span data-lang="ru">Казахстан</span><span data-lang="en">Kazakhstan</span><span data-lang="kz">Қазақстан</span>
+            <span data-lang="ru">Мама 4 детей</span><span data-lang="en">Mother of 4</span><span data-lang="kz">4 баланың анасы</span>
+            <span data-lang="ru">«Отбасы банк»</span><span data-lang="en">Otbasy Bank</span><span data-lang="kz">«Отбасы банк»</span>
+          </div>
+          <blockquote class="review-quote">
+            <span data-lang="ru">В 27 лет впервые села в самолёт. Сегодня мечтаю смелее и действую быстрее — потому что мама не успела.</span>
+            <span data-lang="en">At 27 I boarded a plane for the first time. Today I dream bolder and act faster — because mom didn't get to.</span>
+            <span data-lang="kz">27 жасымда алғаш ұшаққа отырдым. Бүгін батыл арман етіп, тез әрекет етемін — өйткені анам үлгермеді.</span>
+          </blockquote>
+          <p class="review-story">
+            <span data-lang="ru">Совмещает inCruises с работой в «Отбасы банке» и семьёй. Потеря мамы в 20 лет стала толчком жить иначе. Подарила папе и его супруге круиз с посещением Мекки и Медины. 34 года, ND.</span>
+            <span data-lang="en">Balances inCruises with Otbasy Bank job and family. Mother's death at age 20 became a catalyst to live differently. Gifted her father and his wife a cruise visiting Mecca and Medina. 34 years old, ND.</span>
+            <span data-lang="kz">inCruises-ті «Отбасы банк» жұмысы мен отбасымен біріктіреді. 20 жасында ананы жоғалту басқаша өмір сүруге түрткі болды. Әкесі мен оның жұбайына Меккеге және Мединаға круиз сыйлады. 34 жас, ND.</span>
+          </p>
+        </div>
+      </article>
+
+      <!-- Сымбат -->
+      <article class="review-card">
+        <img src="assets/images/reviews/symbat-a.webp" alt="Сымбат Аубакирова" class="review-photo" loading="lazy" width="800" height="800">
+        <div class="review-body">
+          <div>
+            <span class="review-rank">
+              <span data-lang="ru">Партнёр, команда 500+</span>
+              <span data-lang="en">Partner, team 500+</span>
+              <span data-lang="kz">Серіктес, команда 500+</span>
+            </span>
+            <div class="review-name">
+              <span data-lang="ru">Сымбат Аубакирова</span>
+              <span data-lang="en">Symbat Aubakirova</span>
+              <span data-lang="kz">Сымбат Әубәкірова</span>
+            </div>
+          </div>
+          <div class="review-meta">
+            <span data-lang="ru">Казахстан</span><span data-lang="en">Kazakhstan</span><span data-lang="kz">Қазақстан</span>
+            <span data-lang="ru">7 круизов</span><span data-lang="en">7 cruises</span><span data-lang="kz">7 круиз</span>
+            <span data-lang="ru">Бывший преподаватель</span><span data-lang="en">Former lecturer</span><span data-lang="kz">Бұрынғы оқытушы</span>
+          </div>
+          <blockquote class="review-quote">
+            <span data-lang="ru">Увидев, как мои наставники изменили свою жизнь, я сказала себе: «Если они смогли, смогу и я».</span>
+            <span data-lang="en">Seeing how my mentors transformed their lives, I said: "If they could, I can too."</span>
+            <span data-lang="kz">Тәлімгерлерімнің өмірі қалай өзгергенін көріп, өзіме айттым: «Олар жасады — мен де жасаймын».</span>
+          </blockquote>
+          <p class="review-story">
+            <span data-lang="ru">Бывший старший преподаватель университета. 39 лет, мама двоих детей. Первый круиз — Северная Европа, через полгода после вступления. Сегодня — 7 круизов, команда 500+. Показала родителям Европу.</span>
+            <span data-lang="en">Former senior university lecturer. 39 years old, mother of two. First cruise — Northern Europe, six months after joining. Today: 7 cruises, team of 500+. Took her parents to see Europe.</span>
+            <span data-lang="kz">Бұрынғы аға оқытушы. 39 жас, екі баланың анасы. Алғашқы круиз — Солтүстік Еуропа, кірген соң жарты жылдан кейін. Бүгін — 7 круиз, 500+ команда. Ата-анасына Еуропаны көрсетті.</span>
+          </p>
+        </div>
+      </article>
+
+      <!-- Надыра -->
+      <article class="review-card">
+        <img src="assets/images/reviews/nadyra-n.webp" alt="Надыра Нарымбетова" class="review-photo" loading="lazy" width="800" height="800">
+        <div class="review-body">
+          <div>
+            <span class="review-rank">
+              <span data-lang="ru">New National Director</span>
+              <span data-lang="en">New National Director</span>
+              <span data-lang="kz">New National Director</span>
+            </span>
+            <div class="review-name">
+              <span data-lang="ru">Надыра Нарымбетова</span>
+              <span data-lang="en">Nadyra Narimbetova</span>
+              <span data-lang="kz">Нәдіра Нарымбетова</span>
+            </div>
+          </div>
+          <div class="review-meta">
+            <span data-lang="ru">Казахстан</span><span data-lang="en">Kazakhstan</span><span data-lang="kz">Қазақстан</span>
+            <span data-lang="ru">Команда 600+</span><span data-lang="en">Team 600+</span><span data-lang="kz">600+ команда</span>
+            <span data-lang="ru">5 круизов</span><span data-lang="en">5 cruises</span><span data-lang="kz">5 круиз</span>
+          </div>
+          <blockquote class="review-quote">
+            <span data-lang="ru">Мы не используем людей ради бизнеса, мы используем бизнес ради людей.</span>
+            <span data-lang="en">We don't use people for business — we use business for people.</span>
+            <span data-lang="kz">Біз бизнес үшін адамдарды емес, адамдар үшін бизнесті қолданамыз.</span>
+          </blockquote>
+          <p class="review-story">
+            <span data-lang="ru">15 лет опыта мастер-классов и тренингов личностного роста. Мама 4 детей. Команда — более 600 человек. Исполнила мечту родителей, мечту сына — чемпионат Европы по футболу, и свою — путешествие по Европе с подругами детства.</span>
+            <span data-lang="en">15 years of experience leading masterclasses and growth training. Mother of 4. Team of 600+. Fulfilled parents' dream, her son's dream — Euro football championship, and her own — Europe trip with childhood friends.</span>
+            <span data-lang="kz">15 жылдық шеберлік сабақтары мен жеке өсу тренинг тәжірибесі. 4 баланың анасы. 600+ команда. Ата-анасының арманын, ұлының арманын — Еуропа футбол чемпионатын, өзінің арманын — балалық достарымен Еуропа сапарын орындады.</span>
+          </p>
+        </div>
+      </article>
+
+      <!-- Лаура -->
+      <article class="review-card">
+        <img src="assets/images/reviews/laura-a.webp" alt="Лаура Абуова" class="review-photo" loading="lazy" width="800" height="800">
+        <div class="review-body">
+          <div>
+            <span class="review-rank">
+              <span data-lang="ru">New National Director</span>
+              <span data-lang="en">New National Director</span>
+              <span data-lang="kz">New National Director</span>
+            </span>
+            <div class="review-name">
+              <span data-lang="ru">Лаура Абуова</span>
+              <span data-lang="en">Laura Abuova</span>
+              <span data-lang="kz">Лаура Әбуова</span>
+            </div>
+          </div>
+          <div class="review-meta">
+            <span data-lang="ru">Атырау → Астана</span><span data-lang="en">Atyrau → Astana</span><span data-lang="kz">Атырау → Астана</span>
+            <span data-lang="ru">20+ стран</span><span data-lang="en">20+ countries</span><span data-lang="kz">20+ ел</span>
+            <span data-lang="ru">Банковская сфера</span><span data-lang="en">Banking background</span><span data-lang="kz">Банк саласы</span>
+          </div>
+          <blockquote class="review-quote">
+            <span data-lang="ru">Нет ничего невозможного. Только вперёд. Верь в себя и превращай мечты в цели.</span>
+            <span data-lang="en">Nothing is impossible. Only forward. Believe in yourself and turn dreams into goals.</span>
+            <span data-lang="kz">Мүмкін емес ештеңе жоқ. Тек алға. Өзіңе сен және армандарды мақсатқа айналдыр.</span>
+          </blockquote>
+          <p class="review-story">
+            <span data-lang="ru">Из Атырау, замужем, трое детей. Долго работала в крупнейших банках Казахстана. Первый круиз — Италия, Испания, Франция. Подарила родителям паломничество (Мекка, Медина, Египет, Иордания) и круиз. Получила международный сертификат психолога в Дубае.</span>
+            <span data-lang="en">From Atyrau, married, three children. Worked many years in Kazakhstan's largest banks. First cruise — Italy, Spain, France. Gifted her parents a pilgrimage (Mecca, Medina, Egypt, Jordan) and a cruise. International psychology certification from Dubai.</span>
+            <span data-lang="kz">Атыраудан, тұрмыста, үш баласы бар. Қазақстанның ірі банктерінде көп жыл жұмыс істеді. Алғашқы круиз — Италия, Испания, Франция. Ата-анасына зияратты (Мекке, Медина, Мысыр, Иордания) және круизді сыйлады. Дубайда халықаралық психология сертификаты.</span>
+          </p>
+        </div>
+      </article>
+
+      <!-- Мээрим -->
+      <article class="review-card">
+        <img src="assets/images/reviews/meerim-a.webp" alt="Мээрим Айбашова" class="review-photo" loading="lazy" width="800" height="800">
+        <div class="review-body">
+          <div>
+            <span class="review-rank">
+              <span data-lang="ru">Исполнительный директор</span>
+              <span data-lang="en">Executive Director</span>
+              <span data-lang="kz">Атқарушы директор</span>
+            </span>
+            <div class="review-name">
+              <span data-lang="ru">Мээрим Айбашова</span>
+              <span data-lang="en">Meerim Aibashova</span>
+              <span data-lang="kz">Мээрим Айбашова</span>
+            </div>
+          </div>
+          <div class="review-meta">
+            <span data-lang="ru">Кыргызстан</span><span data-lang="en">Kyrgyzstan</span><span data-lang="kz">Қырғызстан</span>
+            <span data-lang="ru">Мама 3 детей</span><span data-lang="en">Mother of 3</span><span data-lang="kz">3 баланың анасы</span>
+            <span data-lang="ru">50+ городов</span><span data-lang="en">50+ cities</span><span data-lang="kz">50+ қала</span>
+          </div>
+          <blockquote class="review-quote">
+            <span data-lang="ru">Без связей и больших возможностей, но с системой и командой — можно построить международный бизнес.</span>
+            <span data-lang="en">Without connections or big resources, but with a system and a team — you can build an international business.</span>
+            <span data-lang="kz">Байланыстарсыз және үлкен мүмкіндіктерсіз, бірақ жүйе мен командамен — халықаралық бизнес құруға болады.</span>
+          </blockquote>
+          <p class="review-story">
+            <span data-lang="ru">Начала практически с нуля, без связей. Построила международную команду — сотни партнёров, тысячи клиентов. Несколько круизов, 50+ городов мира. Пример того, как обычный человек может изменить жизнь через систему и команду.</span>
+            <span data-lang="en">Started from scratch, without connections. Built an international team — hundreds of partners, thousands of clients. Several cruises, 50+ cities. An example of how an ordinary person can change their life through system and team.</span>
+            <span data-lang="kz">Іс жүзінде нөлден, байланыссыз бастады. Халықаралық команда құрды — жүздеген серіктестер, мыңдаған клиенттер. Бірнеше круиз, 50+ қала. Қарапайым адам жүйе мен команда арқылы өмірін қалай өзгерте алатынының мысалы.</span>
+          </p>
+        </div>
+      </article>
+
+    </div>
+
+    <div class="reviews-cta">
       <a href="index.html#join" class="btn-primary" style="display:inline-block;">
         <span data-lang="ru">Оставить заявку →</span>
         <span data-lang="en">Request access →</span>
@@ -81,10 +399,10 @@
       </a>
     </div>
 
-    <p style="text-align:center; font-size:12px; color:var(--text-light); margin-top:32px;">
-      <span data-lang="ru">* Результаты индивидуальны. Система не гарантирует доход.</span>
-      <span data-lang="en">* Results are individual. The system does not guarantee income.</span>
-      <span data-lang="kz">* Нәтижелер жеке. Жүйе табысқа кепілдік бермейді.</span>
+    <p class="reviews-disclaimer">
+      <span data-lang="ru">* Результаты партнёров индивидуальны и зависят от усилий, опыта и времени, вложенного в работу. Система не гарантирует доход или конкретный ранг. Истории и фото опубликованы в официальном журнале inCruises с согласия партнёров.</span>
+      <span data-lang="en">* Partner results are individual and depend on effort, experience and time invested. The system does not guarantee income or a specific rank. Stories and photos published in the official inCruises magazine with partner consent.</span>
+      <span data-lang="kz">* Серіктестердің нәтижелері жеке және күш-жігерге, тәжірибеге және жұмсалған уақытқа байланысты. Жүйе табысқа немесе нақты атаққа кепілдік бермейді. Тарихтар мен фото inCruises ресми журналында серіктестердің келісімімен жарияланды.</span>
     </p>
   </div>
 </section>
