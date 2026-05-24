@@ -34,7 +34,8 @@ PREP_CODE = r"""
 const src = $json.body.source;
 const offset = Number($json.body.chunk_offset || 0);
 const chunks = $json.body.chunks || [];
-return [{ json: { source: src, chunk_offset: offset, chunks: chunks } }];
+const kind = $json.body.kind === 'mlm_context' ? 'mlm_context' : 'canonical';
+return [{ json: { source: src, chunk_offset: offset, chunks: chunks, kind: kind } }];
 """
 
 EMBED_BODY = (
@@ -50,6 +51,7 @@ const rows = upstream.chunks.map((c, i) => ({
   content: c,
   embedding: data[i] ? data[i].embedding : null,
   partner_id: null,
+  kind: upstream.kind || 'canonical',
   metadata: { char_len: c.length }
 }));
 return [{ json: { rows: rows, inserted_count: rows.length } }];

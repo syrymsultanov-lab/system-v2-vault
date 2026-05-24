@@ -8,7 +8,7 @@ hosting: hostinger
 domain: sairateam.com
 stack: static HTML/CSS/JS
 created: 2025-11-01
-updated: 2026-05-23
+updated: 2026-05-24
 ---
 
 # SYSTEM V2.1 — AI-Powered MLM Pipeline
@@ -140,10 +140,19 @@ Landing (sairateam.com) → Supabase (leads) → n8n (VPS) → AI Agent → Chan
   - WF patch `20_Find_Contact` GET → POST RPC (`patch_inbound_link_or_create_contact.py`)
   - **Open access mode:** любой TG user пишет бота → contact автосоздаётся с reactive consent → AI отвечает. Закрытие — одной строкой `ai_consent=FALSE` в RPC step 3, позже
 - [x] **🎉 First real traffic** (2026-05-23 вечер): рассылка Сырыма → 13+ inbound/outbound пар за 10 мин с 2 партнёрами (527728826, 2078661150). Sample: «Как сделать бизнес в Инкрузес» → AI ответил из KB. Латентность 4-7 сек. 3 кандидата с лендинга (Салтанат @Saltavipstar, Батима, Салтанат @Saltavip). Первый трафик с 2026-04-30
+- [x] **🔴 KB balanced retrieval — MLM-классика добавлена** (2026-05-24): Approach B (kind separation), не повтор Bronze hallucination 2026-05-19
+  - Migration `kb_chunks_add_kind_and_balanced_retrieval`: `kind` column (canonical|mlm_context) + RPC `match_kb_chunks` v2 балансом 3 canonical + 2 mlm_context (default ratio 0.6)
+  - 4 файла в `docs/raw/`: Don Failla (45-сек / 10 уроков) + Big Al Secrets + Big Al Leaders + Jim Rohn Vitamins. Ingest → 610 chunks. KB total **267 canonical + 610 mlm_context = 877**
+  - WF14 redeploy (принимает kind), `push_kb_chunks_to_webhook.py` обновлён (list[dict])
+  - `80_Build_Prompt` patch — KB source boundaries секция, маркеры `[KB-N | canonical|mlm-context]`, запрет цитировать суммы из mlm-context, запрет имён авторов (Don Failla / Big Al / Jim Rohn), 2 новых few-shot («где заканчивается структура», «это пирамида»)
+  - RPC smoke 8 Qs: balanced работает, философские Qs → mlm-context, factual Qs → canonical
+  - End-to-end smoke через TG = next session
 - [x] **🔴 Bug fix — debounce IF condition** (2026-05-23 вечер): мой вчерашний patch_inbound_debounce.py имел 2 бага: (1) `leftValue: $json.body` вместо `$json` (RPC возвращает скалярный true), (2) script не делал upsert при re-run. AI 24h не отвечал. Fixed: upsert logic + leftValue `$json`. Memory `feedback_wf_patch_upsert_pattern` создать
 - [x] **🔴 Whisper transcribe — refactor curl+retry** (2026-05-23 вечер): urllib SSL абортил на 8MB Windows → curl 8.19.0 + retry 3x + max-time 900. Plus OPENAI_API_KEY rotation (Сырым revoked old). Block_2-8 транскрибируются background, Block_1 ждёт ffmpeg
-- [ ] **🔴 Saira interview processing** (next session): дождаться завершения транскрипции Block_2-8, ffmpeg-fix Block_1, разобрать по 7 блокам → 5 новых doc файлов (About Saira, Ideal Candidate, Saira AI Rules + дополнить InCruises Ranks/Presentation Script/Company Facts), patch few-shot, KB reingest
+- [ ] **🔴 End-to-end smoke новой KB через TG** (next session): Сырым с chat_id 5243912117 задаёт 5 вопросов боту, audit AI ответов — цитирует ли суммы из mlm-context (compliance), упоминает ли авторов MLM-книг, балансит ли canonical vs mlm-context
+- [ ] **🔴 Saira interview processing** (next session): дождаться завершения транскрипции Block_2-8 (background task `bbo7vnowc`), ffmpeg-fix Block_1, разобрать по 7 блокам → 5 новых doc файлов (About Saira, Ideal Candidate, Saira AI Rules + дополнить InCruises Ranks/Presentation Script/Company Facts), patch few-shot, KB reingest
 - [ ] **🟡 Audit реальных диалогов** (next session): 13+ пар с 527728826/2078661150 + новые с рассылки. Читать полные ответы AI, найти косяки/паттерны для patch few-shot
+- [ ] **🟡 Compliance redact on ingest** (если live-smoke покажет нарушение): regex по «$N млн/тыс/dollars» для mlm-context, либо metadata flag `contains_income_claim` с фильтром в RPC
 - [ ] **🟡 RAG improvements** (top_k 5→10, query expansion, anti-loop, escalation на self-detected no_kb)
 - [ ] **🟡 Form → TG bot bridge deep-link** (вариант C, было пропущено): сейчас полу-bridge есть через handle-link. Полный путь: после submit → redirect `t.me/incruises_ai_bot?start=<uuid>` → бот по UUID lookup lead → contact UPDATE handle+chat_id+attribution к ref-партнёру. Сейчас все random → Сайрин partner_id default
 - [ ] **🟡 Schema-related:** trigger `create_contact_from_lead` только TG. Если WhatsApp/Insta — добавить позже

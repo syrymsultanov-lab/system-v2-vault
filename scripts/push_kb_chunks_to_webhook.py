@@ -28,16 +28,21 @@ MAX_CHARS = 1000
 BATCH_SIZE = 80
 
 KB_SOURCES = [
-    "obsidian-vault/docs/101RU_SIMPLE_COMPANY_PRESENTATION.md",
-    "obsidian-vault/docs/104RU_3.2_INDEPENDENT_PARTNER_AGREEMENT.md",
-    "obsidian-vault/docs/106RU_3.2_MEMBER_AGREEMENT.md",
-    "obsidian-vault/docs/109RU_INCOME_AND_INCENTIVE_OVERVIEW.md",
-    "obsidian-vault/docs/214RU_INCOME_AND_INCENTIVE_GUIDE.md",
-    "obsidian-vault/docs/503RU_PAYMENT_AGREEMENT.md",
-    "obsidian-vault/docs/InCruises Ranks.md",
-    "obsidian-vault/docs/Presentation Script.md",
-    "obsidian-vault/docs/Company Facts.md",
-    "obsidian-vault/docs/Reviews.md",
+    {"path": "obsidian-vault/docs/101RU_SIMPLE_COMPANY_PRESENTATION.md", "kind": "canonical"},
+    {"path": "obsidian-vault/docs/104RU_3.2_INDEPENDENT_PARTNER_AGREEMENT.md", "kind": "canonical"},
+    {"path": "obsidian-vault/docs/106RU_3.2_MEMBER_AGREEMENT.md", "kind": "canonical"},
+    {"path": "obsidian-vault/docs/109RU_INCOME_AND_INCENTIVE_OVERVIEW.md", "kind": "canonical"},
+    {"path": "obsidian-vault/docs/214RU_INCOME_AND_INCENTIVE_GUIDE.md", "kind": "canonical"},
+    {"path": "obsidian-vault/docs/503RU_PAYMENT_AGREEMENT.md", "kind": "canonical"},
+    {"path": "obsidian-vault/docs/InCruises Ranks.md", "kind": "canonical"},
+    {"path": "obsidian-vault/docs/Presentation Script.md", "kind": "canonical"},
+    {"path": "obsidian-vault/docs/Company Facts.md", "kind": "canonical"},
+    {"path": "obsidian-vault/docs/Reviews.md", "kind": "canonical"},
+    # MLM-classics — general patterns/mindset/objection handling
+    {"path": "obsidian-vault/docs/raw/DON_FAILA_s_10_LESSONS_ON_NAPKINS.md", "kind": "mlm_context"},
+    {"path": "obsidian-vault/docs/raw/BIG_ALL_SECRETS.md", "kind": "mlm_context"},
+    {"path": "obsidian-vault/docs/raw/BIG_ALL_LEADERS.md", "kind": "mlm_context"},
+    {"path": "obsidian-vault/docs/raw/JIM_ROHN_VITAMINS_FOR_THE_MIND.md", "kind": "mlm_context"},
 ]
 
 def strip_md_noise(text: str) -> str:
@@ -92,14 +97,14 @@ def delete_source(source: str):
         {"apikey": SR_KEY, "Authorization": f"Bearer {SR_KEY}"},
     )
 
-def post_batch(source: str, chunk_offset: int, batch: list[str]):
+def post_batch(source: str, chunk_offset: int, batch: list[str], kind: str):
     http(
         "POST", WEBHOOK,
         {"Content-Type": "application/json"},
-        {"source": source, "chunk_offset": chunk_offset, "chunks": batch},
+        {"source": source, "chunk_offset": chunk_offset, "chunks": batch, "kind": kind},
     )
 
-def ingest_source(rel: str):
+def ingest_source(rel: str, kind: str = "canonical"):
     path = ROOT / rel
     if not path.exists():
         print(f"  SKIP (missing): {rel}")
@@ -114,14 +119,17 @@ def ingest_source(rel: str):
         return
     delete_source(rel)
     total = len(chunks)
-    print(f"  {rel}: {total} chunks", flush=True)
+    print(f"  {rel} [{kind}]: {total} chunks", flush=True)
     for off in range(0, total, BATCH_SIZE):
         batch = chunks[off:off+BATCH_SIZE]
-        post_batch(rel, off, batch)
+        post_batch(rel, off, batch, kind)
         print(f"    batch {off}-{off+len(batch)-1} OK", flush=True)
 
 if __name__ == "__main__":
-    targets = sys.argv[1:] or KB_SOURCES
-    for rel in targets:
-        ingest_source(rel)
+    if sys.argv[1:]:
+        targets = [{"path": p, "kind": "mlm_context" if "/raw/" in p else "canonical"} for p in sys.argv[1:]]
+    else:
+        targets = KB_SOURCES
+    for entry in targets:
+        ingest_source(entry["path"], entry["kind"])
     print("Done.")
