@@ -8,7 +8,7 @@ hosting: hostinger
 domain: sairateam.com
 stack: static HTML/CSS/JS
 created: 2025-11-01
-updated: 2026-05-24
+updated: 2026-05-25
 ---
 
 # SYSTEM V2.1 — AI-Powered MLM Pipeline
@@ -149,6 +149,13 @@ Landing (sairateam.com) → Supabase (leads) → n8n (VPS) → AI Agent → Chan
   - End-to-end smoke через TG = next session
 - [x] **🔴 Bug fix — debounce IF condition** (2026-05-23 вечер): мой вчерашний patch_inbound_debounce.py имел 2 бага: (1) `leftValue: $json.body` вместо `$json` (RPC возвращает скалярный true), (2) script не делал upsert при re-run. AI 24h не отвечал. Fixed: upsert logic + leftValue `$json`. Memory `feedback_wf_patch_upsert_pattern` создать
 - [x] **🔴 Whisper transcribe — refactor curl+retry** (2026-05-23 вечер): urllib SSL абортил на 8MB Windows → curl 8.19.0 + retry 3x + max-time 900. Plus OPENAI_API_KEY rotation (Сырым revoked old). Block_2-8 транскрибируются background, Block_1 ждёт ffmpeg
+- [x] **🔴 Close open-access TG bridge → DB-only mode** (2026-05-25):
+  - Discovery: 3 form-лида (Салтанат @Saltavipstar, Батима, @Saltavip) сидят с `dry_run` outbound — TG Bot API не пишет первым без numeric chat_id (handle/phone не годятся)
+  - 3 «пробившихся» партнёра через open-access (`527728826`/`2078661150`/`1525700315`) идентифицированы (рассылка Сырыма 2026-05-23)
+  - Migration `link_tg_contact_db_only_no_autocreate`: RPC Step 3 (auto-create) удалён → unknown TG users → empty SETOF → `25_Check_Contact` allowed=false → silence
+  - Patch `35_Log_Unhandled` jsonBody: `events_log` не имеет `partner_id` (есть `entity_type/entity_id/actor_id`) → schema fix, audit trail работает
+  - Smoke E2E (chat_id 888777666) PASS: no contact, no outbound, events_log row `tg_inbound_unknown_sender`
+  - Commit `78a94a2`
 - [ ] **🔴 End-to-end smoke новой KB через TG** (next session): Сырым с chat_id 5243912117 задаёт 5 вопросов боту, audit AI ответов — цитирует ли суммы из mlm-context (compliance), упоминает ли авторов MLM-книг, балансит ли canonical vs mlm-context
 - [ ] **🔴 Saira interview processing** (next session): дождаться завершения транскрипции Block_2-8 (background task `bbo7vnowc`), ffmpeg-fix Block_1, разобрать по 7 блокам → 5 новых doc файлов (About Saira, Ideal Candidate, Saira AI Rules + дополнить InCruises Ranks/Presentation Script/Company Facts), patch few-shot, KB reingest
 - [ ] **🟡 Audit реальных диалогов** (next session): 13+ пар с 527728826/2078661150 + новые с рассылки. Читать полные ответы AI, найти косяки/паттерны для patch few-shot
