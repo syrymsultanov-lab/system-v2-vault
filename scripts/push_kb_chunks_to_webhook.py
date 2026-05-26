@@ -38,11 +38,13 @@ KB_SOURCES = [
     {"path": "obsidian-vault/docs/Presentation Script.md", "kind": "canonical"},
     {"path": "obsidian-vault/docs/Company Facts.md", "kind": "canonical"},
     {"path": "obsidian-vault/docs/Reviews.md", "kind": "canonical"},
+    {"path": "obsidian-vault/docs/Membership Pricing.md", "kind": "canonical"},
     # MLM-classics — general patterns/mindset/objection handling
     {"path": "obsidian-vault/docs/raw/DON_FAILA_s_10_LESSONS_ON_NAPKINS.md", "kind": "mlm_context"},
     {"path": "obsidian-vault/docs/raw/BIG_ALL_SECRETS.md", "kind": "mlm_context"},
     {"path": "obsidian-vault/docs/raw/BIG_ALL_LEADERS.md", "kind": "mlm_context"},
     {"path": "obsidian-vault/docs/raw/JIM_ROHN_VITAMINS_FOR_THE_MIND.md", "kind": "mlm_context"},
+    {"path": "obsidian-vault/docs/raw/RANDY_GAGE_HOW_TO_BUILD_A_MULTILEVEL_MONEY_MACHINE.md", "kind": "mlm_context"},
 ]
 
 def strip_md_noise(text: str) -> str:
