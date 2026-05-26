@@ -8,7 +8,7 @@ hosting: hostinger
 domain: sairateam.com
 stack: static HTML/CSS/JS
 created: 2025-11-01
-updated: 2026-05-25
+updated: 2026-05-25-evening
 ---
 
 # SYSTEM V2.1 — AI-Powered MLM Pipeline
@@ -156,7 +156,14 @@ Landing (sairateam.com) → Supabase (leads) → n8n (VPS) → AI Agent → Chan
   - Patch `35_Log_Unhandled` jsonBody: `events_log` не имеет `partner_id` (есть `entity_type/entity_id/actor_id`) → schema fix, audit trail работает
   - Smoke E2E (chat_id 888777666) PASS: no contact, no outbound, events_log row `tg_inbound_unknown_sender`
   - Commit `78a94a2`
-- [ ] **🔴 End-to-end smoke новой KB через TG** (next session): Сырым с chat_id 5243912117 задаёт 5 вопросов боту, audit AI ответов — цитирует ли суммы из mlm-context (compliance), упоминает ли авторов MLM-книг, балансит ли canonical vs mlm-context
+- [x] **🔴 KB smoke #1 + pricing canonical** (2026-05-25 вечер):
+  - Сырым прогнал 4 Qs (5243912117) — Don Failla балланс ✅, ЛИЧНО/КОМАНДНО/MIX держится, 0 эскалаций, авторов MLM не палит
+  - Audit 13+ пар у `527728826`/`2078661150`/`1525700315`: 🔴 2 critical bugs — PREMIUM/CLASSIC pricing hallucinate split ($200+$300 вместо $250+$250), 50% RP rule пропущен (AI согласился на 2000+600 из 2600 круиза)
+  - **Корень bug 1**: `101RU` таблица товарооборота читалась как разбивка цены. Прямого canonical pricing с активацией/monthly split в KB не было
+  - **Корень bug 2**: 50% правило только в табличной ячейке `101RU` без prose, RAG пропустил
+  - Сырым подтвердил canonical: PREMIUM $500=$250+$250, CLASSIC $200=$100+$100, STARTER $50/мес (нет активации, нет двух половин). RP 800/500, 350/200, 100/50. Free Membership $100 waiver при обороте 1й линии ≥$500/мес. 100% RP бронирование = MD+ (не «3 Leadership Bonuses» как в 101RU)
+  - Создан `obsidian-vault/docs/Membership Pricing.md` — canonical override с pricing + RP + 50% rule + few-shot. `push_kb_chunks_to_webhook.py` обновлён. KB ingest 5 chunks → kb_chunks **882** (277 canonical + 610 mlm_context)
+- [ ] **🔴 Smoke retest 3 pricing Qs** (next session): PREMIUM split, 2000 RP/2600$, STARTER активация. Если AI всё ещё путает — patch `80_Build_Prompt` чтобы поднять Membership Pricing в few-shot
 - [ ] **🔴 Saira interview processing** (next session): дождаться завершения транскрипции Block_2-8 (background task `bbo7vnowc`), ffmpeg-fix Block_1, разобрать по 7 блокам → 5 новых doc файлов (About Saira, Ideal Candidate, Saira AI Rules + дополнить InCruises Ranks/Presentation Script/Company Facts), patch few-shot, KB reingest
 - [ ] **🟡 Audit реальных диалогов** (next session): 13+ пар с 527728826/2078661150 + новые с рассылки. Читать полные ответы AI, найти косяки/паттерны для patch few-shot
 - [ ] **🟡 Compliance redact on ingest** (если live-smoke покажет нарушение): regex по «$N млн/тыс/dollars» для mlm-context, либо metadata flag `contains_income_claim` с фильтром в RPC
