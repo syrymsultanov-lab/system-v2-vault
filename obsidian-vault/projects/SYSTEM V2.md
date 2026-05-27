@@ -8,7 +8,7 @@ hosting: hostinger
 domain: sairateam.com
 stack: static HTML/CSS/JS
 created: 2025-11-01
-updated: 2026-05-25-evening
+updated: 2026-05-27
 ---
 
 # SYSTEM V2.1 — AI-Powered MLM Pipeline
@@ -163,7 +163,23 @@ Landing (sairateam.com) → Supabase (leads) → n8n (VPS) → AI Agent → Chan
   - **Корень bug 2**: 50% правило только в табличной ячейке `101RU` без prose, RAG пропустил
   - Сырым подтвердил canonical: PREMIUM $500=$250+$250, CLASSIC $200=$100+$100, STARTER $50/мес (нет активации, нет двух половин). RP 800/500, 350/200, 100/50. Free Membership $100 waiver при обороте 1й линии ≥$500/мес. 100% RP бронирование = MD+ (не «3 Leadership Bonuses» как в 101RU)
   - Создан `obsidian-vault/docs/Membership Pricing.md` — canonical override с pricing + RP + 50% rule + few-shot. `push_kb_chunks_to_webhook.py` обновлён. KB ingest 5 chunks → kb_chunks **882** (277 canonical + 610 mlm_context)
-- [ ] **🔴 Smoke retest 3 pricing Qs** (next session): PREMIUM split, 2000 RP/2600$, STARTER активация. Если AI всё ещё путает — patch `80_Build_Prompt` чтобы поднять Membership Pricing в few-shot
+- [x] **🔴 Salt­анат Кенигесова дедуп-аудит + WF1 phone E.164** (2026-05-27):
+  - Кейс: партнёр Сайры зарегилась через форму, AI не вышел. Discovery: 2 лида с одинаковым телефоном но разными форматами (`77080277396` vs `+77080277396`), 2 контакта auto-created, 2 outbound `dry_run` (handle ≠ chat_id, deep-link не реализован)
+  - **WF1 fix**: `scripts/patch_wf1_phone_e164_dedup.py` — Normalize Input jsCode теперь strip non-digits + KZ 8→7 + `+` prepend. 5/5 phone форматов schлoпываются в `+77080277396`. Idempotent
+  - Backfill: leads_to_fix=0 (после удаления `b84e8627` Сырымом вручную), contacts.phone=NULL у form-derived (trigger bug — `create_contact_from_lead` не копирует phone)
+  - Discovery schema bug: contact Батимы получил `messenger_handle='+77089419616'` — phone в handle field из-за trigger
+- [x] **🟢 Dashboard contact import — feature implementation** (2026-05-27): `openImport()` был stub, теперь полный CSV/VCF import
+  - 3 итерации deploy: (v1) modal + parser + preview + dedup → (v2) editable preview rows + bulk-skip → (v3) Saira workflow для 5700 контактов
+  - **v3 включает**: multi-filter chip row (`🚫 без имени/фамилии/тел/email/handle/тега`), checkbox на каждой строке, bulk-bar (`✓ Всё видимое · ↕ Инвертировать · ✕ Снять · 🗑 Удалить N`), chunked POST 500/batch с progress, chunked DELETE 500/batch, GET limit=20000
+  - Parsers: CSV (RU+EN headers, quoted fields, `,;\t`), VCF (FN/N/TEL/EMAIL/X-TELEGRAM, params strip)
+  - E.164 phone normalize (same logic как WF1)
+  - "Нет фамилии" парсится из `name.split(/\s+/).length < 2` (schema contacts не имеет `last_name`)
+  - Smoke parsers PASS (Node-локально), end-to-end Сырым PASS (4 CSV контакта Сайре в БД), 5700 VCF тест Сайры — next session
+- [ ] **🔴 Smoke retest 3 pricing Qs**: PREMIUM split, 2000 RP/2600$, STARTER активация. Если AI всё ещё путает — patch `80_Build_Prompt` чтобы поднять Membership Pricing в few-shot
+- [ ] **🔴 Saira VCF import smoke** (5700 контактов): Сайра экспортирует с iPhone/Android → загружает → проверяет фильтры → выборочно удаляет. Если рендер 5700 лагает — добавить virtualization
+- [ ] **🔴 Form → TG deep-link bridge (вариант C)**: критично для всех form-лидов в `dry_run` (Салтанат×2, Батима + будущие). После submit → redirect `t.me/incruises_ai_bot?start=<lead_uuid>` → bot ловит `/start`, UPDATE contact `tg_chat_id+handle` → WF9 dispatch
+- [ ] **🟡 Templates + Training seed** (0 rows в обеих таблицах, UI stubs). Ждёт диктовки от Сырыма ИЛИ pull из vault (`WhatsApp Outreach Template.md` есть)
+- [ ] **🟡 Trigger `create_contact_from_lead` bugs**: не копирует phone; phone Батимы попал в messenger_handle
 - [ ] **🔴 Saira interview processing** (next session): дождаться завершения транскрипции Block_2-8 (background task `bbo7vnowc`), ffmpeg-fix Block_1, разобрать по 7 блокам → 5 новых doc файлов (About Saira, Ideal Candidate, Saira AI Rules + дополнить InCruises Ranks/Presentation Script/Company Facts), patch few-shot, KB reingest
 - [ ] **🟡 Audit реальных диалогов** (next session): 13+ пар с 527728826/2078661150 + новые с рассылки. Читать полные ответы AI, найти косяки/паттерны для patch few-shot
 - [ ] **🟡 Compliance redact on ingest** (если live-smoke покажет нарушение): regex по «$N млн/тыс/dollars» для mlm-context, либо metadata flag `contains_income_claim` с фильтром в RPC

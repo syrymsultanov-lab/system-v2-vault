@@ -45,9 +45,19 @@
       <button class="pt" data-t="acquaintance">👋 Знакомые</button>
       <button class="pt" data-t="invited">📨 Приглашены</button>
     </div>
+    <div class="pnl-tabs" id="cn-missing" style="padding:0 2px 4px;gap:4px;flex-wrap:wrap">
+      <span style="color:var(--td);font-size:11px;padding:4px 6px">Фильтр пропусков:</span>
+      <button class="pt" data-m="no_name">🚫 без имени</button>
+      <button class="pt" data-m="no_surname">🚫 без фамилии</button>
+      <button class="pt" data-m="no_phone">🚫 без тел</button>
+      <button class="pt" data-m="no_email">🚫 без email</button>
+      <button class="pt" data-m="no_handle">🚫 без handle</button>
+      <button class="pt" data-m="no_tag">🚫 без тега</button>
+    </div>
     <div class="sch">
       <input type="text" id="cn-search" class="sch-i" placeholder="🔍 Поиск по имени, телефону, мессенджеру, тегу…">
     </div>
+    <div id="cn-bulk-bar" style="display:flex;flex-wrap:wrap;gap:6px;padding:6px 2px 8px;align-items:center"></div>
     <div class="tl" id="cn-list"></div>
     <div class="leads-empty" id="cn-empty" style="display:none">
       <div class="stub-icon">📭</div>
@@ -62,6 +72,36 @@
   <div class="modal-box">
     <button class="modal-close" onclick="closeCnModal()">✕</button>
     <div id="cn-modal-body"></div>
+  </div>
+</div>
+
+<!-- Import Modal -->
+<div class="modal" id="cn-import-modal">
+  <div class="modal-backdrop" onclick="closeImportModal()"></div>
+  <div class="modal-box" style="max-width:720px">
+    <button class="modal-close" onclick="closeImportModal()">✕</button>
+    <div class="modal-head">
+      <div class="modal-ttl">📥 Импорт контактов</div>
+      <div class="modal-sub">CSV или VCF (vCard). Дубли по телефону/handle пропускаются.</div>
+    </div>
+    <div class="modal-grid">
+      <div class="mg-row" style="flex-direction:column;align-items:flex-start;gap:6px">
+        <span class="mg-k">Файл</span>
+        <input type="file" id="imp-file" accept=".csv,.vcf,.vcard,text/csv,text/vcard" style="color:var(--tm)">
+      </div>
+      <div class="mg-row" style="flex-direction:column;align-items:flex-start;gap:6px">
+        <span class="mg-k">CSV колонки (любой порядок, любой регистр)</span>
+        <span class="mg-v" style="font-size:11px;color:var(--td);font-family:'JetBrains Mono',monospace">
+          name | phone | email | messenger | messenger_handle | tag | notes
+        </span>
+      </div>
+      <div id="imp-preview" style="display:none;border:1px solid var(--brd);border-radius:8px;padding:10px;background:var(--gl);font-size:12px;color:var(--tm);max-height:380px;overflow:auto"></div>
+    </div>
+    <div class="modal-actions">
+      <button class="mbtn mbtn-ai" id="imp-parse-btn" onclick="doParseFile()">🔍 Разобрать файл</button>
+      <button class="mbtn mbtn-p" id="imp-confirm-btn" onclick="doImport()" style="display:none">✅ Импортировать</button>
+      <button class="mbtn mbtn-g" onclick="closeImportModal()">Отмена</button>
+    </div>
   </div>
 </div>
 
@@ -107,6 +147,36 @@ function initials(name) {
 
 let tagFilter = 'all';
 let cnSearch = '';
+let missingFilters = new Set();
+let selectedIds = new Set();
+
+function passesMissingFilters(c) {
+  for (const m of missingFilters) {
+    if (m === 'no_name' && c.name && c.name.trim()) return false;
+    if (m === 'no_surname') {
+      const parts = (c.name || '').trim().split(/\s+/).filter(Boolean);
+      if (parts.length >= 2) return false;
+    }
+    if (m === 'no_phone' && c.phone) return false;
+    if (m === 'no_email' && c.email) return false;
+    if (m === 'no_handle' && c.messenger_handle) return false;
+    if (m === 'no_tag' && c.tag) return false;
+  }
+  return true;
+}
+
+function applyFilters() {
+  const q = cnSearch.toLowerCase().trim();
+  return CONTACTS.filter(c => {
+    if (tagFilter === 'invited') { if (!c.invited_at) return false; }
+    else if (tagFilter !== 'all' && c.tag !== tagFilter) return false;
+    if (!passesMissingFilters(c)) return false;
+    if (!q) return true;
+    const tg = TAG_MAP[c.tag]?.label || '';
+    const hay = `${c.name||''} ${c.phone||''} ${c.email||''} ${c.messenger_handle||''} ${tg} ${c.notes||''}`.toLowerCase();
+    return hay.includes(q);
+  });
+}
 
 function updateStats() {
   const total = CONTACTS.length;
@@ -120,17 +190,13 @@ function updateStats() {
 function renderContacts() {
   const list = document.getElementById('cn-list');
   const empty = document.getElementById('cn-empty');
-  const q = cnSearch.toLowerCase().trim();
 
-  const filtered = CONTACTS.filter(c => {
-    if (tagFilter === 'invited') { if (!c.invited_at) return false; }
-    else if (tagFilter !== 'all' && c.tag !== tagFilter) return false;
-    if (!q) return true;
-    const tg = TAG_MAP[c.tag]?.label || '';
-    const hay = `${c.name||''} ${c.phone||''} ${c.email||''} ${c.messenger_handle||''} ${tg} ${c.notes||''}`.toLowerCase();
-    return hay.includes(q);
-  });
+  const filtered = applyFilters();
+  const visibleIds = new Set(filtered.map(c => c.id));
+  // Clean selection of items no longer visible (keep only visible-selected)
+  for (const id of [...selectedIds]) if (!visibleIds.has(id)) selectedIds.delete(id);
 
+  renderBulkBar(filtered);
   updateStats();
 
   if (filtered.length === 0) {
@@ -144,16 +210,75 @@ function renderContacts() {
     const t = TAG_MAP[c.tag] || { label:c.tag||'—', icon:'🏷', tg:'tg1' };
     const m = MSG_MAP[c.messenger] || { label:c.messenger||'—', icon:'💬' };
     const invIcon = c.invited_at ? '<span class="cn-inv" title="Приглашение отправлено">📨</span>' : '';
+    const checked = selectedIds.has(c.id) ? 'checked' : '';
     return `
-      <div class="ti lead-ti" onclick="openCnModal('${c.id}')">
-        <div class="la lead-ava" style="width:34px;height:34px;font-size:12px;background:linear-gradient(135deg,var(--ocean),var(--azure))">${esc(initials(c.name))}</div>
-        <div class="ti-b">
+      <div class="ti lead-ti" style="cursor:default">
+        <input type="checkbox" class="cn-chk" data-id="${c.id}" ${checked} onclick="event.stopPropagation();toggleSelect('${c.id}')" style="width:18px;height:18px;cursor:pointer;accent-color:var(--azure);margin-right:4px">
+        <div class="la lead-ava" onclick="openCnModal('${c.id}')" style="width:34px;height:34px;font-size:12px;background:linear-gradient(135deg,var(--ocean),var(--azure));cursor:pointer">${esc(initials(c.name))}</div>
+        <div class="ti-b" onclick="openCnModal('${c.id}')" style="cursor:pointer">
           <div class="ti-t">${esc(c.name)} ${invIcon}</div>
           <div class="ti-m">${m.icon} ${esc(c.messenger_handle||'—')} · ${esc(c.phone||'—')}</div>
         </div>
         <div class="tg ${t.tg}">${t.icon} ${t.label}</div>
       </div>`;
   }).join('');
+}
+
+function toggleSelect(id) {
+  if (selectedIds.has(id)) selectedIds.delete(id); else selectedIds.add(id);
+  renderBulkBar(applyFilters());
+}
+
+function selectAllVisible() {
+  for (const c of applyFilters()) selectedIds.add(c.id);
+  renderContacts();
+}
+function clearSelection() {
+  selectedIds.clear();
+  renderContacts();
+}
+function invertSelection() {
+  for (const c of applyFilters()) {
+    if (selectedIds.has(c.id)) selectedIds.delete(c.id);
+    else selectedIds.add(c.id);
+  }
+  renderContacts();
+}
+
+async function deleteSelected() {
+  if (!selectedIds.size) { showToast('Ничего не выбрано'); return; }
+  const ids = [...selectedIds];
+  if (!confirm(`Удалить ${ids.length} контактов? Действие необратимо.`)) return;
+
+  const CHUNK = 500;
+  let done = 0, failed = 0;
+  for (let i = 0; i < ids.length; i += CHUNK) {
+    const batch = ids.slice(i, i + CHUNK);
+    try {
+      await sb('DELETE', `contacts?id=in.(${batch.join(',')})`);
+      done += batch.length;
+    } catch (e) {
+      failed += batch.length;
+      console.error('delete batch:', e);
+    }
+  }
+  CONTACTS = CONTACTS.filter(c => !selectedIds.has(c.id) || (failed && !ids.slice(ids.length-failed).includes(c.id)));
+  selectedIds.clear();
+  await loadContacts();
+  showToast(failed ? `Удалено ${done}, ошибок ${failed}` : `🗑 Удалено: ${done}`);
+}
+
+function renderBulkBar(filtered) {
+  const bar = document.getElementById('cn-bulk-bar');
+  if (!bar) return;
+  const sel = selectedIds.size;
+  const total = filtered.length;
+  bar.innerHTML = `
+    <span style="color:var(--tm);font-size:12px">Показано: <b>${total}</b> · Выделено: <b style="color:${sel ? 'var(--azure)' : 'var(--td)'}">${sel}</b></span>
+    <button onclick="selectAllVisible()" style="background:transparent;border:1px solid var(--brd);color:var(--tm);padding:5px 10px;border-radius:6px;font-size:11px;cursor:pointer">✓ Всё видимое (${total})</button>
+    <button onclick="invertSelection()" style="background:transparent;border:1px solid var(--brd);color:var(--tm);padding:5px 10px;border-radius:6px;font-size:11px;cursor:pointer">↕ Инвертировать</button>
+    <button onclick="clearSelection()" style="background:transparent;border:1px solid var(--brd);color:var(--tm);padding:5px 10px;border-radius:6px;font-size:11px;cursor:pointer" ${sel ? '' : 'disabled'}>✕ Снять</button>
+    <button onclick="deleteSelected()" style="background:${sel ? 'var(--coral)' : 'transparent'};border:1px solid var(--coral);color:${sel ? '#fff' : 'var(--coral)'};padding:5px 12px;border-radius:6px;font-size:11px;cursor:${sel ? 'pointer' : 'not-allowed'};font-weight:600" ${sel ? '' : 'disabled'}>🗑 Удалить ${sel || ''}</button>`;
 }
 
 async function loadContacts() {
@@ -164,7 +289,7 @@ async function loadContacts() {
       list.innerHTML = '<div class="leads-empty"><p>Партнёр не найден.</p></div>';
       return;
     }
-    CONTACTS = await sb('GET', `contacts?partner_id=eq.${currentPartner.id}&select=*&order=created_at.desc`);
+    CONTACTS = await sb('GET', `contacts?partner_id=eq.${currentPartner.id}&select=*&order=created_at.desc&limit=20000`);
     renderContacts();
   } catch (e) {
     console.error('loadContacts:', e);
@@ -178,6 +303,14 @@ document.getElementById('cn-tags').addEventListener('click', e => {
   document.querySelectorAll('#cn-tags .pt').forEach(b => b.classList.remove('active'));
   btn.classList.add('active');
   tagFilter = btn.dataset.t;
+  renderContacts();
+});
+document.getElementById('cn-missing').addEventListener('click', e => {
+  const btn = e.target.closest('.pt');
+  if (!btn) return;
+  const key = btn.dataset.m;
+  if (missingFilters.has(key)) { missingFilters.delete(key); btn.classList.remove('active'); }
+  else { missingFilters.add(key); btn.classList.add('active'); }
   renderContacts();
 });
 document.getElementById('cn-search').addEventListener('input', e => { cnSearch = e.target.value; renderContacts(); });
@@ -289,11 +422,303 @@ async function deleteContact(id) {
 function openAddContact() {
   showToast('➕ Форма добавления появится в следующей итерации.');
 }
+
+// ====== IMPORT ======
+let IMPORT_PARSED = [];
+
 function openImport() {
-  showToast('📥 Импорт CSV / VCF / Google Contacts — отдельная итерация.');
+  IMPORT_PARSED = [];
+  document.getElementById('imp-file').value = '';
+  document.getElementById('imp-preview').style.display = 'none';
+  document.getElementById('imp-preview').innerHTML = '';
+  document.getElementById('imp-confirm-btn').style.display = 'none';
+  document.getElementById('imp-parse-btn').style.display = '';
+  document.getElementById('cn-import-modal').classList.add('active');
+}
+function closeImportModal() {
+  document.getElementById('cn-import-modal').classList.remove('active');
 }
 
-document.addEventListener('keydown', e => { if (e.key === 'Escape') closeCnModal(); });
+function normalizePhoneE164(raw) {
+  let d = String(raw || '').replace(/\D/g, '');
+  if (!d) return '';
+  if (d.length === 11 && d.startsWith('8')) d = '7' + d.slice(1);
+  return '+' + d;
+}
+
+function detectMessenger(handle) {
+  const h = String(handle || '').trim();
+  if (!h) return '';
+  if (h.startsWith('@')) return 'telegram';
+  if (/^\+?\d{8,}$/.test(h.replace(/\D/g,''))) return 'whatsapp';
+  if (h.includes('@') && h.includes('.')) return 'email';
+  return '';
+}
+
+const CSV_FIELD_ALIASES = {
+  name: ['name', 'имя', 'fullname', 'full_name', 'фио'],
+  phone: ['phone', 'телефон', 'tel', 'mobile', 'phone_number'],
+  email: ['email', 'почта', 'e-mail', 'mail'],
+  messenger: ['messenger', 'мессенджер', 'channel'],
+  messenger_handle: ['messenger_handle', 'handle', 'username', 'логин', 'tg', 'telegram', 'whatsapp', 'instagram'],
+  tag: ['tag', 'тег', 'категория', 'group'],
+  notes: ['notes', 'заметка', 'заметки', 'комментарий', 'comment'],
+};
+
+function parseCsv(text) {
+  const rows = [];
+  let cur = [], field = '', inQuotes = false, i = 0;
+  while (i < text.length) {
+    const c = text[i];
+    if (inQuotes) {
+      if (c === '"' && text[i+1] === '"') { field += '"'; i += 2; continue; }
+      if (c === '"') { inQuotes = false; i++; continue; }
+      field += c; i++; continue;
+    }
+    if (c === '"') { inQuotes = true; i++; continue; }
+    if (c === ',' || c === ';' || c === '\t') { cur.push(field); field = ''; i++; continue; }
+    if (c === '\r') { i++; continue; }
+    if (c === '\n') { cur.push(field); rows.push(cur); cur = []; field = ''; i++; continue; }
+    field += c; i++;
+  }
+  if (field !== '' || cur.length) { cur.push(field); rows.push(cur); }
+  if (!rows.length) return [];
+
+  const headers = rows[0].map(h => h.trim().toLowerCase());
+  const colMap = {};
+  for (const [key, aliases] of Object.entries(CSV_FIELD_ALIASES)) {
+    const idx = headers.findIndex(h => aliases.includes(h));
+    if (idx >= 0) colMap[key] = idx;
+  }
+  if (colMap.name === undefined && colMap.phone === undefined) {
+    throw new Error('CSV должен содержать колонку "name" или "phone"');
+  }
+  const out = [];
+  for (let r = 1; r < rows.length; r++) {
+    const row = rows[r];
+    if (!row.length || row.every(c => !c.trim())) continue;
+    const obj = {};
+    for (const key of Object.keys(colMap)) {
+      obj[key] = (row[colMap[key]] || '').trim();
+    }
+    out.push(obj);
+  }
+  return out;
+}
+
+function parseVcf(text) {
+  const cards = text.split(/BEGIN:VCARD/i).slice(1);
+  const out = [];
+  for (const raw of cards) {
+    const block = raw.split(/END:VCARD/i)[0];
+    const lines = block.split(/\r?\n/);
+    const obj = { name: '', phone: '', email: '', messenger_handle: '', messenger: '' };
+    for (const line of lines) {
+      const l = line.trim();
+      if (!l) continue;
+      const m = l.match(/^([^:;]+)(;[^:]*)?:(.*)$/);
+      if (!m) continue;
+      const key = m[1].toUpperCase();
+      const val = m[3].trim();
+      if (key === 'FN' && !obj.name) obj.name = val;
+      else if (key === 'N' && !obj.name) {
+        const parts = val.split(';');
+        obj.name = [parts[1], parts[0]].filter(Boolean).join(' ').trim();
+      }
+      else if (key === 'TEL' && !obj.phone) obj.phone = val;
+      else if (key === 'EMAIL' && !obj.email) obj.email = val;
+      else if (key === 'X-TELEGRAM' && !obj.messenger_handle) {
+        obj.messenger_handle = val; obj.messenger = 'telegram';
+      }
+    }
+    if (obj.name || obj.phone) out.push(obj);
+  }
+  return out;
+}
+
+async function doParseFile() {
+  const fileInput = document.getElementById('imp-file');
+  const file = fileInput.files[0];
+  if (!file) { showToast('Выберите файл'); return; }
+  const text = await file.text();
+  const ext = file.name.toLowerCase().split('.').pop();
+  let parsed;
+  try {
+    parsed = (ext === 'vcf' || ext === 'vcard') ? parseVcf(text) : parseCsv(text);
+  } catch (e) {
+    showToast('❌ Парсинг: ' + e.message); return;
+  }
+  if (!parsed.length) { showToast('Не найдено ни одной записи'); return;}
+
+  IMPORT_PARSED = parsed.map(p => {
+    const phone = normalizePhoneE164(p.phone);
+    const handle = (p.messenger_handle || '').trim();
+    const messenger = p.messenger || detectMessenger(handle) || (phone ? 'whatsapp' : '');
+    return {
+      name: (p.name || '').trim() || (phone || handle || 'Без имени'),
+      phone: phone || '',
+      email: (p.email || '').trim().toLowerCase(),
+      messenger: messenger || '',
+      messenger_handle: handle || '',
+      tag: (p.tag || '').trim(),
+      notes: (p.notes || '').trim(),
+      _skip: false,
+    };
+  });
+  renderImportPreview();
+  document.getElementById('imp-parse-btn').style.display = 'none';
+  document.getElementById('imp-confirm-btn').style.display = '';
+}
+
+function isDupRow(n) {
+  if (!n) return false;
+  const ph = n.phone || '';
+  const hd = (n.messenger_handle || '').toLowerCase();
+  for (const c of CONTACTS) {
+    if (ph && c.phone === ph) return true;
+    if (hd && (c.messenger_handle || '').toLowerCase() === hd) return true;
+  }
+  return false;
+}
+
+function renderImportPreview() {
+  const preview = document.getElementById('imp-preview');
+  preview.style.display = 'block';
+
+  const tagOptions = ['', ...Object.keys(TAG_MAP)];
+  const tagOptHtml = (val) => tagOptions.map(t =>
+    `<option value="${t}" ${t === (val||'') ? 'selected' : ''}>${t ? (TAG_MAP[t]?.icon + ' ' + TAG_MAP[t]?.label) : '—'}</option>`
+  ).join('');
+
+  let totalKept = 0, totalDup = 0;
+  for (const n of IMPORT_PARSED) {
+    if (n._skip) continue;
+    if (isDupRow(n)) totalDup++; else totalKept++;
+  }
+
+  const rowsHtml = IMPORT_PARSED.map((n, i) => {
+    const dup = !n._skip && isDupRow(n);
+    const skip = n._skip;
+    const opacity = skip ? '.3' : (dup ? '.5' : '1');
+    const status = skip ? '🚫' : (dup ? '⚠' : '✅');
+    return `
+      <tr style="border-bottom:1px solid var(--brd);opacity:${opacity}">
+        <td style="padding:3px 4px;text-align:center" title="${dup ? 'дубль' : (skip ? 'пропустить' : 'импортировать')}">${status}</td>
+        <td style="padding:3px 4px"><input type="text" value="${esc(n.name)}" oninput="updateImportField(${i},'name',this.value)" style="width:140px;background:transparent;border:1px solid var(--brd);color:var(--tb);padding:3px 5px;border-radius:4px;font-size:11px"></td>
+        <td style="padding:3px 4px"><input type="text" value="${esc(n.phone)}" oninput="updateImportField(${i},'phone',this.value,true)" style="width:120px;background:transparent;border:1px solid var(--brd);color:var(--tb);padding:3px 5px;border-radius:4px;font-family:'JetBrains Mono',monospace;font-size:11px"></td>
+        <td style="padding:3px 4px"><input type="text" value="${esc(n.messenger_handle)}" oninput="updateImportField(${i},'messenger_handle',this.value)" style="width:110px;background:transparent;border:1px solid var(--brd);color:var(--tb);padding:3px 5px;border-radius:4px;font-size:11px"></td>
+        <td style="padding:3px 4px"><select onchange="updateImportField(${i},'tag',this.value)" style="background:var(--panel);border:1px solid var(--brd);color:var(--tb);padding:3px 5px;border-radius:4px;font-size:11px">${tagOptHtml(n.tag)}</select></td>
+        <td style="padding:3px 4px;text-align:center"><button onclick="toggleImportSkip(${i})" style="background:transparent;border:1px solid var(--brd);color:${skip ? 'var(--green)' : 'var(--coral)'};cursor:pointer;width:24px;height:24px;border-radius:4px;font-size:13px" title="${skip ? 'вернуть' : 'удалить'}">${skip ? '↩' : '✕'}</button></td>
+      </tr>`;
+  }).join('');
+
+  preview.innerHTML = `
+    <div style="margin-bottom:8px;display:flex;justify-content:space-between;align-items:center;gap:8px;flex-wrap:wrap">
+      <div>
+        Всего: <b>${IMPORT_PARSED.length}</b> ·
+        К импорту: <b style="color:var(--green)">${totalKept}</b> ·
+        Дублей: <b style="color:var(--sun)">${totalDup}</b> ·
+        Удалено: <b style="color:var(--coral)">${IMPORT_PARSED.filter(n=>n._skip).length}</b>
+      </div>
+      <div style="display:flex;gap:4px;flex-wrap:wrap">
+        <button onclick="bulkSkipImport('no_phone')" style="background:transparent;border:1px solid var(--brd);color:var(--tm);padding:3px 8px;border-radius:4px;font-size:11px;cursor:pointer">🗑 без тел</button>
+        <button onclick="bulkSkipImport('no_handle')" style="background:transparent;border:1px solid var(--brd);color:var(--tm);padding:3px 8px;border-radius:4px;font-size:11px;cursor:pointer">🗑 без handle</button>
+        <button onclick="bulkSkipImport('no_email')" style="background:transparent;border:1px solid var(--brd);color:var(--tm);padding:3px 8px;border-radius:4px;font-size:11px;cursor:pointer">🗑 без email</button>
+        <button onclick="bulkSkipImport('dupes')" style="background:transparent;border:1px solid var(--brd);color:var(--tm);padding:3px 8px;border-radius:4px;font-size:11px;cursor:pointer">🗑 дубли</button>
+      </div>
+    </div>
+    <table style="width:100%;border-collapse:collapse">
+      <thead><tr style="border-bottom:1px solid var(--brd-a);text-align:left;color:var(--td);font-size:11px">
+        <th style="padding:4px"></th><th style="padding:4px">Имя</th><th style="padding:4px">Телефон</th><th style="padding:4px">Handle</th><th style="padding:4px">Тег</th><th style="padding:4px"></th>
+      </tr></thead>
+      <tbody>${rowsHtml}</tbody>
+    </table>`;
+  document.getElementById('imp-confirm-btn').textContent = `✅ Импортировать ${totalKept}`;
+  document.getElementById('imp-confirm-btn').disabled = totalKept === 0;
+}
+
+function updateImportField(idx, key, value, normalizePhone = false) {
+  if (!IMPORT_PARSED[idx]) return;
+  IMPORT_PARSED[idx][key] = normalizePhone && value ? normalizePhoneE164(value) : value;
+  // dedup/dup status may change — re-render counters but keep input focus
+  const counters = document.querySelector('#imp-preview > div');
+  if (counters) {
+    let kept = 0, dup = 0;
+    for (const n of IMPORT_PARSED) {
+      if (n._skip) continue;
+      if (isDupRow(n)) dup++; else kept++;
+    }
+    document.getElementById('imp-confirm-btn').textContent = `✅ Импортировать ${kept}`;
+    document.getElementById('imp-confirm-btn').disabled = kept === 0;
+  }
+}
+
+function toggleImportSkip(idx) {
+  if (!IMPORT_PARSED[idx]) return;
+  IMPORT_PARSED[idx]._skip = !IMPORT_PARSED[idx]._skip;
+  renderImportPreview();
+}
+
+function bulkSkipImport(mode) {
+  let n = 0;
+  for (const r of IMPORT_PARSED) {
+    if (r._skip) continue;
+    let hit = false;
+    if (mode === 'no_phone' && !r.phone) hit = true;
+    else if (mode === 'no_handle' && !r.messenger_handle) hit = true;
+    else if (mode === 'no_email' && !r.email) hit = true;
+    else if (mode === 'dupes' && isDupRow(r)) hit = true;
+    if (hit) { r._skip = true; n++; }
+  }
+  renderImportPreview();
+  showToast(`🗑 Пропущено: ${n}`);
+}
+
+async function doImport() {
+  if (!IMPORT_PARSED.length) return;
+  if (!currentPartner) { showToast('Партнёр не найден'); return; }
+
+  const ext = (document.getElementById('imp-file').files[0]?.name || '').toLowerCase();
+  const source = ext.endsWith('.vcf') || ext.endsWith('.vcard') ? 'vcf' : 'csv';
+  const filename = document.getElementById('imp-file').files[0]?.name || null;
+
+  const toInsert = IMPORT_PARSED.filter(n => !n._skip && !isDupRow(n)).map(n => ({
+    partner_id: currentPartner.id,
+    name: n.name,
+    phone: n.phone || null,
+    email: n.email || null,
+    messenger: n.messenger || null,
+    messenger_handle: n.messenger_handle || null,
+    tag: n.tag || null,
+    notes: n.notes || null,
+    source,
+    imported_from: filename,
+  }));
+  if (!toInsert.length) { showToast('Нечего импортировать (все дубли/пропущены)'); return; }
+
+  const btn = document.getElementById('imp-confirm-btn');
+  btn.disabled = true;
+  const CHUNK = 500;
+  let done = 0, failed = 0;
+  for (let i = 0; i < toInsert.length; i += CHUNK) {
+    const batch = toInsert.slice(i, i + CHUNK);
+    btn.textContent = `⏳ ${done}/${toInsert.length}…`;
+    try {
+      const inserted = await sb('POST', 'contacts', batch);
+      done += Array.isArray(inserted) ? inserted.length : batch.length;
+    } catch (e) {
+      failed += batch.length;
+      console.error('import batch:', e);
+    }
+  }
+  closeImportModal();
+  await loadContacts();
+  if (failed) showToast(`Импорт: ${done} ок, ${failed} ошибок`);
+  else showToast(`✅ Импортировано: ${done}`);
+}
+// ====== /IMPORT ======
+
+document.addEventListener('keydown', e => { if (e.key === 'Escape') { closeCnModal(); closeImportModal(); } });
 
 loadContacts();
 </script>
